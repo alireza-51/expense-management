@@ -1,0 +1,413 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .dashboard-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #374151;
+    }
+    
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    
+    .category-card {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .category-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .category-item:last-child {
+        border-bottom: none;
+    }
+    
+    .category-name {
+        font-weight: 500;
+    }
+    
+    .category-amount {
+        font-weight: bold;
+        color: #059669;
+    }
+    
+    .expense-amount {
+        color: #dc2626;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 10px;
+    }
+    
+    /* Improved Application Management Styling */
+    .app-management {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 25px;
+        margin-top: 30px;
+    }
+    
+    .app-module {
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .app-module:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .app-module table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .app-module caption {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-align: left;
+    }
+    
+    .app-module caption a {
+        color: white;
+        text-decoration: none;
+    }
+    
+    .app-module caption a:hover {
+        text-decoration: underline;
+    }
+    
+    .app-module tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.2s ease;
+    }
+    
+    .app-module tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    .app-module tr:last-child {
+        border-bottom: none;
+    }
+    
+    .app-module th {
+        padding: 12px 20px;
+        text-align: left;
+        font-weight: 500;
+        color: #374151;
+        width: 60%;
+    }
+    
+    .app-module th a {
+        color: #1f2937;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .app-module th a:hover {
+        color: #667eea;
+        text-decoration: underline;
+    }
+    
+    .app-module td {
+        padding: 12px 20px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .addlink {
+        background: #10b981;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+    
+    .addlink:hover {
+        background: #059669;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .changelink {
+        background: #3b82f6;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+    
+    .changelink:hover {
+        background: #2563eb;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .viewlink {
+        background: #6b7280;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+    
+    .viewlink:hover {
+        background: #4b5563;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .no-permission {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6b7280;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <!-- Financial Dashboard Section -->
+    <div class="dashboard-section">
+        <h2 class="section-title">📊 Financial Overview (Last 30 Days)</h2>
+        
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_expenses|floatformat:0 }}</div>
+                <div class="stat-label">Total Expenses</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ total_income|floatformat:0 }}</div>
+                <div class="stat-label">Total Income</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ net_amount|floatformat:0 }}</div>
+                <div class="stat-label">Net Amount</div>
+            </div>
+        </div>
+        
+        <!-- Chart -->
+        <div class="chart-container">
+            <div class="chart-title">Expenses vs Income Trend</div>
+            <canvas id="financialChart" width="400" height="200"></canvas>
+        </div>
+        
+        <!-- Categories Breakdown -->
+        <div class="categories-grid">
+            <div class="category-card">
+                <div class="chart-title">Top Expense Categories</div>
+                {% for category in expense_categories %}
+                <div class="category-item">
+                    <span class="category-name">{{ category.name }}</span>
+                    <span class="category-amount expense-amount">{{ category.total_amount|floatformat:0 }}</span>
+                </div>
+                {% empty %}
+                <p style="color: #6b7280; text-align: center; padding: 10px;">No expense data available</p>
+                {% endfor %}
+            </div>
+            
+            <div class="category-card">
+                <div class="chart-title">Top Income Categories</div>
+                {% for category in income_categories %}
+                <div class="category-item">
+                    <span class="category-name">{{ category.name }}</span>
+                    <span class="category-amount">{{ category.total_amount|floatformat:0 }}</span>
+                </div>
+                {% empty %}
+                <p style="color: #6b7280; text-align: center; padding: 10px;">No income data available</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Original Admin Content -->
+    <div class="app-management">
+        <h2 class="section-title">📋 Application Management</h2>
+        {% if app_list %}
+            {% for app in app_list %}
+            <div class="app-module app-{{ app.app_label }}{% if app.app_url in request.path %} current-app{% endif %}">
+                <table>
+                    <caption>
+                        <a href="{{ app.app_url }}" class="section" title="{% blocktranslate with name=app.name %}Models in the {{ name }} application{% endblocktranslate %}">{{ app.name }}</a>
+                    </caption>
+                    {% for model in app.models %}
+                    <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path %} current-model{% endif %}">
+                        {% if model.admin_url %}
+                            <th scope="row"><a href="{{ model.admin_url }}"{% if model.admin_url in request.path %} aria-current="page"{% endif %}>{{ model.name }}</a></th>
+                        {% else %}
+                            <th scope="row">{{ model.name }}</th>
+                        {% endif %}
+
+                        {% if model.add_url %}
+                            <td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>
+                        {% else %}
+                            <td>&nbsp;</td>
+                        {% endif %}
+
+                        {% if model.admin_url and show_changelinks %}
+                            {% if model.view_only %}
+                            <td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>
+                            {% else %}
+                            <td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>
+                            {% endif %}
+                        {% else %}
+                            <td>&nbsp;</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-permission">
+                <p>{% translate "You don't have permission to view or edit anything." %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('financialChart').getContext('2d');
+    
+    const chartData = {
+        labels: {{ chart_data.labels|safe }},
+        datasets: [
+            {
+                label: 'Expenses',
+                data: {{ chart_data.expenses|safe }},
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: 'Income',
+                data: {{ chart_data.income|safe }},
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }
+        ]
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 
