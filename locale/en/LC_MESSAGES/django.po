@@ -1,0 +1,143 @@
+# English translations for expense-management project.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the expense-management project.
+msgid ""
+msgstr ""
+"Project-Id-Version: expense-management\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-25 10:35+0000\n"
+"PO-Revision-Date: 2025-01-25 10:35+0000\n"
+"Last-Translator: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: config/admin.py:15
+msgid "Expense Management System"
+msgstr "Expense Management System"
+
+#: config/admin.py:16
+msgid "Expense Management"
+msgstr "Expense Management"
+
+#: config/admin.py:17
+msgid "Welcome to Expense Management Administration"
+msgstr "Welcome to Expense Management Administration"
+
+#: config/admin.py:140
+msgid "Financial Dashboard"
+msgstr "Financial Dashboard"
+
+#: templates/admin/index.html:220
+msgid "Financial Overview (Last 30 Days)"
+msgstr "Financial Overview (Last 30 Days)"
+
+#: templates/admin/index.html:227
+msgid "Total Expenses"
+msgstr "Total Expenses"
+
+#: templates/admin/index.html:232
+msgid "Total Income"
+msgstr "Total Income"
+
+#: templates/admin/index.html:237
+msgid "Net Amount"
+msgstr "Net Amount"
+
+#: templates/admin/index.html:243
+msgid "Expenses vs Income Trend"
+msgstr "Expenses vs Income Trend"
+
+#: templates/admin/index.html:251
+msgid "Top Expense Categories"
+msgstr "Top Expense Categories"
+
+#: templates/admin/index.html:256
+msgid "No expense data available"
+msgstr "No expense data available"
+
+#: templates/admin/index.html:261
+msgid "Top Income Categories"
+msgstr "Top Income Categories"
+
+#: templates/admin/index.html:266
+msgid "No income data available"
+msgstr "No income data available"
+
+#: templates/admin/index.html:272
+msgid "Application Management"
+msgstr "Application Management"
+
+#: templates/admin/index.html:290
+msgid "Add"
+msgstr "Add"
+
+#: templates/admin/index.html:295
+msgid "View"
+msgstr "View"
+
+#: templates/admin/index.html:297
+msgid "Change"
+msgstr "Change"
+
+#: templates/admin/index.html:305
+msgid "You don't have permission to view or edit anything."
+msgstr "You don't have permission to view or edit anything."
+
+#: templates/admin/index.html:235
+msgid "English"
+msgstr "English"
+
+# Model field translations
+msgid "Name"
+msgstr "Name"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Color"
+msgstr "Color"
+
+msgid "Category"
+msgstr "Category"
+
+msgid "Amount"
+msgstr "Amount"
+
+msgid "Transaction Date"
+msgstr "Transaction Date"
+
+msgid "Notes"
+msgstr "Notes"
+
+msgid "Expense"
+msgstr "Expense"
+
+msgid "Expenses"
+msgstr "Expenses"
+
+msgid "Income"
+msgstr "Income"
+
+msgid "Transaction"
+msgstr "Transaction"
+
+msgid "Transactions"
+msgstr "Transactions"
+
+msgid "Categories"
+msgstr "Categories"
+
+msgid "Incomes"
+msgstr "Incomes"
+
+msgid "Expense can only be associated with expense categories"
+msgstr "Expense can only be associated with expense categories"
+
+msgid "Income can only be associated with income categories"
+msgstr "Income can only be associated with income categories" 

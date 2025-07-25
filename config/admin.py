@@ -3,13 +3,28 @@ from django.shortcuts import render
 from django.urls import path
 from django.db.models import Sum, Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _, activate, get_language, check_for_language
+from django.http import HttpResponseRedirect
+from django.conf import settings
 from datetime import datetime, timedelta
 
-
 # Customize the default admin site
-admin.site.site_header = "Expense Management System"
-admin.site.site_title = "Expense Management"
-admin.site.index_title = "Welcome to Expense Management Administration"
+admin.site.site_header = _("Expense Management System")
+admin.site.site_title = _("Expense Management")
+admin.site.index_title = _("Welcome to Expense Management Administration")
+
+
+def switch_language(request):
+    """Switch language and redirect back"""
+    language = request.GET.get('lang', 'en')
+    if check_for_language(language):
+        # Set the language in session
+        request.session[settings.LANGUAGE_COOKIE_NAME] = language
+        # Also set it in the request for immediate effect
+        request.LANGUAGE_CODE = language
+        # Activate the language for this request
+        activate(language)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/admin/'))
 
 
 def get_dashboard_data():
@@ -18,17 +33,6 @@ def get_dashboard_data():
         # Import here to avoid circular imports
         from expenses.models import Transaction, Expense, Income
         from categories.models import Category
-        
-        # Debug: Check if we have any data
-        total_transactions = Transaction.objects.count()
-        total_expenses = Expense.objects.count()
-        total_incomes = Income.objects.count()
-        total_categories = Category.objects.count()
-        
-        print(f"Debug - Total transactions: {total_transactions}")
-        print(f"Debug - Total expenses: {total_expenses}")
-        print(f"Debug - Total incomes: {total_incomes}")
-        print(f"Debug - Total categories: {total_categories}")
         
         # Get ALL data using the base Transaction model
         # Get expenses (transactions with expense categories)
@@ -45,9 +49,6 @@ def get_dashboard_data():
             total=Sum('amount')
         ).order_by('transacted_at__date')
         
-        print(f"Debug - Expenses data count: {len(expenses_data)}")
-        print(f"Debug - Income data count: {len(income_data)}")
-        
         # Get category breakdown
         expense_categories = Category.objects.filter(
             type=Category.CategoryType.EXPENSE
@@ -61,17 +62,10 @@ def get_dashboard_data():
             total_amount=Sum('transactions__amount')
         ).filter(total_amount__isnull=False).order_by('-total_amount')[:5]
         
-        print(f"Debug - Expense categories count: {len(expense_categories)}")
-        print(f"Debug - Income categories count: {len(income_categories)}")
-        
         # Calculate totals
         total_expenses = sum(item['total'] for item in expenses_data)
         total_income = sum(item['total'] for item in income_data)
         net_amount = total_income - total_expenses
-        
-        print(f"Debug - Total expenses amount: {total_expenses}")
-        print(f"Debug - Total income amount: {total_income}")
-        print(f"Debug - Net amount: {net_amount}")
         
         # Prepare chart data - use all available dates
         chart_data = {
@@ -98,18 +92,32 @@ def get_dashboard_data():
                 (item['total'] for item in expenses_data if item['transacted_at__date'] == date),
                 0
             )
-            chart_data['expenses'].append(expense_amount)
+            chart_data['expenses'].append(float(expense_amount))
             
             # Find income for this date
             income_amount = next(
                 (item['total'] for item in income_data if item['transacted_at__date'] == date),
                 0
             )
-            chart_data['income'].append(income_amount)
+            chart_data['income'].append(float(income_amount))
         
-        print(f"Debug - Chart labels count: {len(chart_data['labels'])}")
-        print(f"Debug - Chart expenses count: {len(chart_data['expenses'])}")
-        print(f"Debug - Chart income count: {len(chart_data['income'])}")
+        # If no data, create some sample data for testing
+        if not chart_data['labels']:
+            from datetime import date, timedelta
+            today = date.today()
+            for i in range(7):
+                test_date = today - timedelta(days=i)
+                chart_data['labels'].append(test_date.strftime('%m/%d'))
+                chart_data['expenses'].append(0.0)
+                chart_data['income'].append(0.0)
+            chart_data['labels'].reverse()
+            chart_data['expenses'].reverse()
+            chart_data['income'].reverse()
+        
+        # Debug: Print chart data to console
+        print(f"Chart data: {chart_data}")
+        print(f"Total expenses: {total_expenses}")
+        print(f"Total income: {total_income}")
         
         return {
             'chart_data': chart_data,
@@ -120,7 +128,7 @@ def get_dashboard_data():
             'income_categories': income_categories,
         }
     except Exception as e:
-        print(f"Debug - Error occurred: {str(e)}")
+        print(f"Error in get_dashboard_data: {e}")
         # Return empty data if there's an error
         return {
             'chart_data': {'labels': [], 'expenses': [], 'income': []},
@@ -152,12 +160,20 @@ def dashboard_view(request):
     dashboard_data = get_dashboard_data()
     context = {
         **dashboard_data,
-        'title': 'Financial Dashboard',
+        'title': _('Financial Dashboard'),
     }
     return render(request, 'admin/dashboard.html', context)
 
 
 # Add dashboard URL to admin site
-admin.site.get_urls = lambda: [
-    path('dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
-] + admin.site.get_urls() 
+original_get_urls = admin.site.get_urls
+
+def custom_get_urls():
+    urls = original_get_urls()
+    custom_urls = [
+        path('dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
+        path('switch-language/', admin.site.admin_view(switch_language), name='switch_language'),
+    ]
+    return custom_urls + urls
+
+admin.site.get_urls = custom_get_urls 

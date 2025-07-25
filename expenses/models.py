@@ -1,13 +1,29 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from base.models import BaseModel
+from categories.models import Category
 
 
 class Transaction(BaseModel):
-    amount = models.BigIntegerField()
-    category = models.ForeignKey(to='categories.Category', related_name='transactions', on_delete=models.CASCADE)
-    note = models.CharField(max_length=4000, null=True, blank=True)
-    transacted_at = models.DateTimeField()
-
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='transactions',
+        verbose_name=_('Category')
+    )
+    amount = models.DecimalField(
+        _('Amount'),
+        max_digits=10,
+        decimal_places=2
+    )
+    transacted_at = models.DateTimeField(_('Transaction Date'))
+    notes = models.TextField(_('Notes'), blank=True)
+    
+    class Meta:
+        verbose_name = _('Transaction')
+        verbose_name_plural = _('Transactions')
+        ordering = ['-transacted_at']
+    
     def __str__(self):
         return f"{self.category.name} - {self.amount} ({self.transacted_at.strftime('%Y-%m-%d')})"
 
@@ -15,13 +31,14 @@ class Transaction(BaseModel):
 class Expense(Transaction):
     class Meta:
         proxy = True
-
+        verbose_name = _('Expense')
+        verbose_name_plural = _('Expenses')
+    
     def save(self, *args, **kwargs):
-        # Ensure the category is of expense type
-        if self.category.type != self.category.CategoryType.EXPENSE:
-            raise ValueError("Expense transactions must use expense categories")
+        if self.category.type != Category.CategoryType.EXPENSE:
+            raise ValueError(_("Expense can only be associated with expense categories"))
         super().save(*args, **kwargs)
-
+    
     def __str__(self):
         return f"Expense: {self.category.name} - {self.amount} ({self.transacted_at.strftime('%Y-%m-%d')})"
 
@@ -29,12 +46,13 @@ class Expense(Transaction):
 class Income(Transaction):
     class Meta:
         proxy = True
-
+        verbose_name = _('Income')
+        verbose_name_plural = _('Incomes')
+    
     def save(self, *args, **kwargs):
-        # Ensure the category is of income type
-        if self.category.type != self.category.CategoryType.INCOME:
-            raise ValueError("Income transactions must use income categories")
+        if self.category.type != Category.CategoryType.INCOME:
+            raise ValueError(_("Income can only be associated with income categories"))
         super().save(*args, **kwargs)
-
+    
     def __str__(self):
         return f"Income: {self.category.name} - {self.amount} ({self.transacted_at.strftime('%Y-%m-%d')})"

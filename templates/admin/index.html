@@ -1,11 +1,71 @@
 {% extends "admin/base_site.html" %}
-{% load i18n static %}
+{% load i18n static humanize %}
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block extrastyle %}
 {{ block.super }}
 <style>
+    .language-switcher {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: white;
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .language-switcher select {
+        padding: 5px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        background: white;
+        font-size: 14px;
+        min-width: 120px;
+    }
+    
+    .language-switcher select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .language-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .flag-icon {
+        width: 16px;
+        height: 12px;
+        border-radius: 2px;
+        display: inline-block;
+    }
+    
+    .flag-en {
+        background: linear-gradient(to bottom, #012169 0%, #012169 50%, #ffffff 50%, #ffffff 100%);
+        position: relative;
+    }
+    
+    .flag-en::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, #c8102e 30%, #c8102e 35%, transparent 35%),
+                    linear-gradient(-45deg, transparent 30%, #c8102e 30%, #c8102e 35%, transparent 35%);
+    }
+    
+    .flag-fa {
+        background: linear-gradient(to bottom, #239f40 0%, #239f40 33%, #ffffff 33%, #ffffff 66%, #da0000 66%, #da0000 100%);
+    }
+    
     .dashboard-section {
         background: white;
         border-radius: 10px;
@@ -46,6 +106,8 @@
         padding: 20px;
         margin-bottom: 20px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        height: 400px;
+        position: relative;
     }
     
     .chart-title {
@@ -246,58 +308,84 @@
 {% endblock %}
 
 {% block content %}
+<!-- Language Switcher -->
+<div class="language-switcher">
+    <select onchange="switchLanguage(this.value)">
+        <option value="en" {% if LANGUAGE_CODE == 'en' or not LANGUAGE_CODE %}selected{% endif %}>
+            <span class="language-option">
+                <span class="flag-icon flag-en"></span>
+                {% translate "English" %}
+            </span>
+        </option>
+        <option value="fa" {% if LANGUAGE_CODE == 'fa' %}selected{% endif %}>
+            <span class="language-option">
+                <span class="flag-icon flag-fa"></span>
+                فارسی
+            </span>
+        </option>
+    </select>
+</div>
+
 <div id="content-main">
     <!-- Financial Dashboard Section -->
     <div class="dashboard-section">
-        <h2 class="section-title">📊 Financial Overview (Last 30 Days)</h2>
+        <h2 class="section-title">📊 {% translate "Financial Overview (Last 30 Days)" %}</h2>
         
         <!-- Statistics Cards -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value">{{ total_expenses|floatformat:0 }}</div>
-                <div class="stat-label">Total Expenses</div>
+                <div class="stat-value" data-value="{{ total_expenses }}">{{ total_expenses|floatformat:0|intcomma }}</div>
+                <div class="stat-label">{% translate "Total Expenses" %}</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-value">{{ total_income|floatformat:0 }}</div>
-                <div class="stat-label">Total Income</div>
+                <div class="stat-value" data-value="{{ total_income }}">{{ total_income|floatformat:0|intcomma }}</div>
+                <div class="stat-label">{% translate "Total Income" %}</div>
             </div>
             
             <div class="stat-card">
-                <div class="stat-value">{{ net_amount|floatformat:0 }}</div>
-                <div class="stat-label">Net Amount</div>
+                <div class="stat-value" data-value="{{ net_amount }}">{{ net_amount|floatformat:0|intcomma }}</div>
+                <div class="stat-label">{% translate "Net Amount" %}</div>
             </div>
         </div>
         
         <!-- Chart -->
         <div class="chart-container">
-            <div class="chart-title">Expenses vs Income Trend</div>
-            <canvas id="financialChart" width="400" height="200"></canvas>
+            <div class="chart-title">{% translate "Expenses vs Income Trend" %}</div>
+            <div style="height: 320px; position: relative;">
+                <canvas id="financialChart"></canvas>
+                <div id="chartFallback" style="display: none; text-align: center; padding: 40px; color: #6b7280;">
+                    <p>Chart data summary:</p>
+                    <p>Expenses: {{ chart_data.expenses|length }} data points</p>
+                    <p>Income: {{ chart_data.income|length }} data points</p>
+                    <p>Date range: {% if chart_data.labels %}{{ chart_data.labels.0 }} to {{ chart_data.labels|last }}{% else %}No data{% endif %}</p>
+                </div>
+            </div>
         </div>
         
         <!-- Categories Breakdown -->
         <div class="categories-grid">
             <div class="category-card">
-                <div class="chart-title">Top Expense Categories</div>
+                <div class="chart-title">{% translate "Top Expense Categories" %}</div>
                 {% for category in expense_categories %}
                 <div class="category-item">
                     <span class="category-name">{{ category.name }}</span>
-                    <span class="category-amount expense-amount">{{ category.total_amount|floatformat:0 }}</span>
+                    <span class="category-amount expense-amount">{{ category.total_amount|floatformat:0|intcomma }}</span>
                 </div>
                 {% empty %}
-                <p style="color: #6b7280; text-align: center; padding: 10px;">No expense data available</p>
+                <p style="color: #6b7280; text-align: center; padding: 10px;">{% translate "No expense data available" %}</p>
                 {% endfor %}
             </div>
             
             <div class="category-card">
-                <div class="chart-title">Top Income Categories</div>
+                <div class="chart-title">{% translate "Top Income Categories" %}</div>
                 {% for category in income_categories %}
                 <div class="category-item">
                     <span class="category-name">{{ category.name }}</span>
-                    <span class="category-amount">{{ category.total_amount|floatformat:0 }}</span>
+                    <span class="category-amount">{{ category.total_amount|floatformat:0|intcomma }}</span>
                 </div>
                 {% empty %}
-                <p style="color: #6b7280; text-align: center; padding: 10px;">No income data available</p>
+                <p style="color: #6b7280; text-align: center; padding: 10px;">{% translate "No income data available" %}</p>
                 {% endfor %}
             </div>
         </div>
@@ -305,7 +393,7 @@
     
     <!-- Original Admin Content -->
     <div class="app-management">
-        <h2 class="section-title">📋 Application Management</h2>
+        <h2 class="section-title">📋 {% translate "Application Management" %}</h2>
         {% if app_list %}
             {% for app in app_list %}
             <div class="app-module app-{{ app.app_label }}{% if app.app_url in request.path %} current-app{% endif %}">
@@ -351,63 +439,162 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('financialChart').getContext('2d');
-    
-    const chartData = {
-        labels: {{ chart_data.labels|safe }},
-        datasets: [
-            {
-                label: 'Expenses',
-                data: {{ chart_data.expenses|safe }},
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            },
-            {
-                label: 'Income',
-                data: {{ chart_data.income|safe }},
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }
-        ]
-    };
-    
-    new Chart(ctx, {
-        type: 'line',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString();
-                        }
-                    }
-                }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            }
+// Fallback if Chart.js fails to load
+if (typeof Chart === 'undefined') {
+    console.error('Chart.js failed to load from CDN');
+    document.addEventListener('DOMContentLoaded', function() {
+        const canvas = document.getElementById('financialChart');
+        if (canvas && canvas.parentElement) {
+            canvas.parentElement.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 40px;">Chart.js library failed to load. Please check your internet connection.</p>';
         }
     });
+}
+</script>
+{{ chart_data.labels|json_script:"chart-labels" }}
+{{ chart_data.expenses|json_script:"chart-expenses" }}
+{{ chart_data.income|json_script:"chart-income" }}
+<script>
+    // Pass translated labels to JavaScript
+    const chartLabels = {
+        expenses: '{% translate "Expenses" %}',
+        income: '{% translate "Income" %}'
+    };
+</script>
+<script>
+function switchLanguage(lang) {
+    window.location.href = '{% url "admin:switch_language" %}?lang=' + lang;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Format numbers with commas
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    // Format all stat values
+    document.querySelectorAll('.stat-value').forEach(function(element) {
+        const value = element.getAttribute('data-value');
+        if (value) {
+            element.textContent = formatNumber(parseFloat(value).toFixed(0));
+        }
+    });
+    
+    // Format category amounts
+    document.querySelectorAll('.category-amount').forEach(function(element) {
+        const text = element.textContent;
+        const num = parseFloat(text.replace(/,/g, ''));
+        if (!isNaN(num)) {
+            element.textContent = formatNumber(num.toFixed(0));
+        }
+    });
+    
+    try {
+        const canvas = document.getElementById('financialChart');
+        if (!canvas) {
+            console.error('Chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Could not get 2D context');
+            return;
+        }
+        
+        // Get data from json_script elements
+        const labelsElement = document.getElementById('chart-labels');
+        const expensesElement = document.getElementById('chart-expenses');
+        const incomeElement = document.getElementById('chart-income');
+        
+        if (!labelsElement || !expensesElement || !incomeElement) {
+            console.error('Chart data elements not found');
+            return;
+        }
+        
+        const labels = JSON.parse(labelsElement.textContent);
+        const expenses = JSON.parse(expensesElement.textContent);
+        const income = JSON.parse(incomeElement.textContent);
+        
+        console.log('Chart data loaded:', { labels, expenses, income });
+        
+        // Check if we have data to display
+        if (labels.length === 0) {
+            console.log('No chart data available');
+            canvas.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 40px;">No financial data available for chart</p>';
+            return;
+        }
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js not available');
+            canvas.parentElement.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 40px;">Chart.js library not loaded</p>';
+            return;
+        }
+        
+        const chartData = {
+            labels: labels,
+            datasets: [
+                {
+                    label: chartLabels.expenses,
+                    data: expenses,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: chartLabels.income,
+                    data: income,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        };
+    
+        new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating chart:', error);
+        const canvas = document.getElementById('financialChart');
+        const fallback = document.getElementById('chartFallback');
+        if (canvas && fallback) {
+            canvas.style.display = 'none';
+            fallback.style.display = 'block';
+            fallback.innerHTML += '<p style="color: #dc2626; margin-top: 20px;">Error: ' + error.message + '</p>';
+        }
+    }
 });
 </script>
 {% endblock %} 

@@ -1,0 +1,143 @@
+# Farsi translations for expense-management project.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the expense-management project.
+msgid ""
+msgstr ""
+"Project-Id-Version: expense-management\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-25 10:35+0000\n"
+"PO-Revision-Date: 2025-01-25 10:35+0000\n"
+"Last-Translator: \n"
+"Language: fa\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: config/admin.py:15
+msgid "Expense Management System"
+msgstr "سیستم مدیریت هزینه"
+
+#: config/admin.py:16
+msgid "Expense Management"
+msgstr "مدیریت هزینه"
+
+#: config/admin.py:17
+msgid "Welcome to Expense Management Administration"
+msgstr "به مدیریت سیستم مدیریت هزینه خوش آمدید"
+
+#: config/admin.py:140
+msgid "Financial Dashboard"
+msgstr "داشبورد مالی"
+
+#: templates/admin/index.html:220
+msgid "Financial Overview (Last 30 Days)"
+msgstr "نمای کلی مالی (۳۰ روز گذشته)"
+
+#: templates/admin/index.html:227
+msgid "Total Expenses"
+msgstr "کل هزینه‌ها"
+
+#: templates/admin/index.html:232
+msgid "Total Income"
+msgstr "کل درآمد"
+
+#: templates/admin/index.html:237
+msgid "Net Amount"
+msgstr "مبلغ خالص"
+
+#: templates/admin/index.html:243
+msgid "Expenses vs Income Trend"
+msgstr "روند هزینه‌ها در مقابل درآمد"
+
+#: templates/admin/index.html:251
+msgid "Top Expense Categories"
+msgstr "دسته‌بندی‌های برتر هزینه"
+
+#: templates/admin/index.html:256
+msgid "No expense data available"
+msgstr "داده‌ای برای هزینه موجود نیست"
+
+#: templates/admin/index.html:261
+msgid "Top Income Categories"
+msgstr "دسته‌بندی‌های برتر درآمد"
+
+#: templates/admin/index.html:266
+msgid "No income data available"
+msgstr "داده‌ای برای درآمد موجود نیست"
+
+#: templates/admin/index.html:272
+msgid "Application Management"
+msgstr "مدیریت برنامه"
+
+#: templates/admin/index.html:290
+msgid "Add"
+msgstr "افزودن"
+
+#: templates/admin/index.html:295
+msgid "View"
+msgstr "مشاهده"
+
+#: templates/admin/index.html:297
+msgid "Change"
+msgstr "تغییر"
+
+#: templates/admin/index.html:305
+msgid "You don't have permission to view or edit anything."
+msgstr "شما مجوز مشاهده یا ویرایش چیزی را ندارید."
+
+#: templates/admin/index.html:235
+msgid "English"
+msgstr "انگلیسی"
+
+# Model field translations
+msgid "Name"
+msgstr "نام"
+
+msgid "Type"
+msgstr "نوع"
+
+msgid "Description"
+msgstr "توضیحات"
+
+msgid "Color"
+msgstr "رنگ"
+
+msgid "Category"
+msgstr "دسته‌بندی"
+
+msgid "Amount"
+msgstr "مبلغ"
+
+msgid "Transaction Date"
+msgstr "تاریخ تراکنش"
+
+msgid "Notes"
+msgstr "یادداشت‌ها"
+
+msgid "Expense"
+msgstr "هزینه"
+
+msgid "Expenses"
+msgstr "هزینه‌ها"
+
+msgid "Income"
+msgstr "درآمد"
+
+msgid "Transaction"
+msgstr "تراکنش"
+
+msgid "Transactions"
+msgstr "تراکنش‌ها"
+
+msgid "Categories"
+msgstr "دسته‌بندی‌ها"
+
+msgid "Incomes"
+msgstr "درآمدها"
+
+msgid "Expense can only be associated with expense categories"
+msgstr "هزینه فقط می‌تواند با دسته‌بندی‌های هزینه مرتبط باشد"
+
+msgid "Income can only be associated with income categories"
+msgstr "درآمد فقط می‌تواند با دسته‌بندی‌های درآمد مرتبط باشد" 
