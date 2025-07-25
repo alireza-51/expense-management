@@ -124,13 +124,96 @@
         color: #dc2626;
     }
     
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 10px;
+    }
+    
     .section-title {
         font-size: 1.5rem;
         font-weight: bold;
-        margin-bottom: 20px;
         color: #374151;
-        border-bottom: 2px solid #e5e7eb;
-        padding-bottom: 10px;
+        margin: 0;
+    }
+    
+    .dashboard-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .month-navigation {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    
+    .statistics-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }
+    
+    .statistics-link:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .nav-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid #d1d5db;
+    }
+    
+    .nav-btn.prev-month {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    
+    .nav-btn.prev-month:hover {
+        background: #e5e7eb;
+        color: #1f2937;
+    }
+    
+    .nav-btn.current-month {
+        background: var(--unfold-color-primary-600);
+        color: white;
+        border-color: var(--unfold-color-primary-600);
+    }
+    
+    .nav-btn.current-month:hover {
+        background: var(--unfold-color-primary-700);
+        color: white;
+    }
+    
+    .nav-btn.next-month {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    
+    .nav-btn.next-month:hover {
+        background: #e5e7eb;
+        color: #1f2937;
     }
     
     /* Restore Django Unfold default app management styling */
@@ -353,7 +436,27 @@
 <div id="content-main">
     <!-- Financial Dashboard Section -->
     <div class="dashboard-section">
-        <h2 class="section-title">📊 {% translate "Financial Overview (Last 30 Days)" %}</h2>
+        <div class="dashboard-header">
+            <h2 class="section-title">📊 {% translate "Financial Overview" %} ({{ current_month_title }})</h2>
+            <div class="dashboard-actions">
+                <div class="month-navigation">
+                    <a href="?month_offset={{ month_offset|add:'-1' }}{% if specific_date %}&date={{ specific_date }}{% endif %}" 
+                       class="nav-btn prev-month" title="{% translate 'Previous Month' %}">
+                        ← {% translate "Previous" %}
+                    </a>
+                    <a href="?month_offset=0" class="nav-btn current-month" title="{% translate 'Current Month' %}">
+                        {% translate "Current" %}
+                    </a>
+                    <a href="?month_offset={{ month_offset|add:'1' }}{% if specific_date %}&date={{ specific_date }}{% endif %}" 
+                       class="nav-btn next-month" title="{% translate 'Next Month' %}">
+                        {% translate "Next" %} →
+                    </a>
+                </div>
+                <a href="{% url 'admin:statistics' %}" class="statistics-link" title="{% translate 'View Detailed Statistics' %}">
+                    📈 {% translate "Statistics" %}
+                </a>
+            </div>
+        </div>
         
         <!-- Statistics Cards -->
         <div class="stats-grid">
@@ -377,12 +480,12 @@
         <div class="chart-container">
             <div class="chart-title">{% translate "Expenses vs Income Trend" %}</div>
             <div style="height: 320px; position: relative;">
-                <canvas id="financialChart"></canvas>
+                <div id="financialChart"></div>
                 <div id="chartFallback" style="display: none; text-align: center; padding: 40px; color: #6b7280;">
                     <p>Chart data summary:</p>
                     <p>Expenses: {{ chart_data.expenses|length }} data points</p>
                     <p>Income: {{ chart_data.income|length }} data points</p>
-                    <p>Date range: {% if chart_data.labels %}{{ chart_data.labels.0 }} to {{ chart_data.labels|last }}{% else %}No data{% endif %}</p>
+                    <p>Date range: {% if chart_data.dates %}{{ chart_data.dates.0 }} to {{ chart_data.dates|last }}{% else %}No data{% endif %}</p>
                 </div>
             </div>
         </div>
@@ -461,20 +564,20 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-// Fallback if Chart.js fails to load
-if (typeof Chart === 'undefined') {
-    console.error('Chart.js failed to load from CDN');
+// Fallback if Plotly fails to load
+if (typeof Plotly === 'undefined') {
+    console.error('Plotly failed to load from CDN');
     document.addEventListener('DOMContentLoaded', function() {
-        const canvas = document.getElementById('financialChart');
-        if (canvas && canvas.parentElement) {
-            canvas.parentElement.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 40px;">Chart.js library failed to load. Please check your internet connection.</p>';
+        const chartContainer = document.getElementById('financialChart');
+        if (chartContainer) {
+            chartContainer.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 40px;">Plotly library failed to load. Please check your internet connection.</p>';
         }
     });
 }
 </script>
-{{ chart_data.labels|json_script:"chart-labels" }}
+{{ chart_data.dates|json_script:"chart-dates" }}
 {{ chart_data.expenses|json_script:"chart-expenses" }}
 {{ chart_data.income|json_script:"chart-income" }}
 <script>
@@ -514,108 +617,120 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     try {
-        const canvas = document.getElementById('financialChart');
-        if (!canvas) {
-            console.error('Chart canvas not found');
-            return;
-        }
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            console.error('Could not get 2D context');
+        const chartContainer = document.getElementById('financialChart');
+        if (!chartContainer) {
+            console.error('Chart container not found');
             return;
         }
         
         // Get data from json_script elements
-        const labelsElement = document.getElementById('chart-labels');
+        const datesElement = document.getElementById('chart-dates');
         const expensesElement = document.getElementById('chart-expenses');
         const incomeElement = document.getElementById('chart-income');
         
-        if (!labelsElement || !expensesElement || !incomeElement) {
+        if (!datesElement || !expensesElement || !incomeElement) {
             console.error('Chart data elements not found');
             return;
         }
         
-        const labels = JSON.parse(labelsElement.textContent);
+        const dates = JSON.parse(datesElement.textContent);
         const expenses = JSON.parse(expensesElement.textContent);
         const income = JSON.parse(incomeElement.textContent);
         
-        console.log('Chart data loaded:', { labels, expenses, income });
+        console.log('Chart data loaded:', { dates, expenses, income });
         
         // Check if we have data to display
-        if (labels.length === 0) {
+        if (dates.length === 0) {
             console.log('No chart data available');
-            canvas.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 40px;">No financial data available for chart</p>';
+            chartContainer.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 40px;">No financial data available for chart</p>';
             return;
         }
         
-        // Check if Chart.js is available
-        if (typeof Chart === 'undefined') {
-            console.error('Chart.js not available');
-            canvas.parentElement.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 40px;">Chart.js library not loaded</p>';
+        // Check if Plotly is available
+        if (typeof Plotly === 'undefined') {
+            console.error('Plotly not available');
+            chartContainer.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 40px;">Plotly library not loaded</p>';
             return;
         }
         
-        const chartData = {
-            labels: labels,
-            datasets: [
-                {
-                    label: chartLabels.expenses,
-                    data: expenses,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                },
-                {
-                    label: chartLabels.income,
-                    data: income,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }
-            ]
+        // Create Plotly chart data
+        const trace1 = {
+            x: dates,
+            y: expenses,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: chartLabels.expenses,
+            line: {
+                color: '#ef4444',
+                width: 2,
+                shape: 'spline'
+            },
+            marker: {
+                color: '#ef4444',
+                size: 6
+            },
+            fill: 'tonexty',
+            fillcolor: 'rgba(239, 68, 68, 0.1)'
         };
-    
-        new Chart(ctx, {
-            type: 'line',
-            data: chartData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toLocaleString();
-                            }
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
-        });
+        
+        const trace2 = {
+            x: dates,
+            y: income,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: chartLabels.income,
+            line: {
+                color: '#10b981',
+                width: 2,
+                shape: 'spline'
+            },
+            marker: {
+                color: '#10b981',
+                size: 6
+            },
+            fill: 'tonexty',
+            fillcolor: 'rgba(16, 185, 129, 0.1)'
+        };
+        
+        const layout = {
+            title: '',
+            xaxis: {
+                title: '',
+                type: 'date'
+            },
+            yaxis: {
+                title: '',
+                tickformat: ',',
+                separatethousands: true
+            },
+            legend: {
+                orientation: 'h',
+                y: -0.2
+            },
+            margin: {
+                l: 50,
+                r: 50,
+                t: 30,
+                b: 80
+            },
+            height: 350,
+            showlegend: true,
+            hovermode: 'x unified'
+        };
+        
+        const config = {
+            responsive: true,
+            displayModeBar: false
+        };
+        
+        Plotly.newPlot(chartContainer, [trace1, trace2], layout, config);
+        
     } catch (error) {
         console.error('Error creating chart:', error);
-        const canvas = document.getElementById('financialChart');
+        const chartContainer = document.getElementById('financialChart');
         const fallback = document.getElementById('chartFallback');
-        if (canvas && fallback) {
-            canvas.style.display = 'none';
+        if (chartContainer && fallback) {
+            chartContainer.style.display = 'none';
             fallback.style.display = 'block';
             fallback.innerHTML += '<p style="color: #dc2626; margin-top: 20px;">Error: ' + error.message + '</p>';
         }

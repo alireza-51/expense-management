@@ -2,10 +2,12 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import Transaction, Expense, Income
 from categories.models import Category
+from .forms import ExpenseForm, IncomeForm, TransactionForm
 
 
 @admin.register(Transaction)
 class TransactionAdmin(ModelAdmin):
+    form = TransactionForm
     list_display = ['amount', 'category', 'notes', 'transacted_at', 'created_at']
     list_filter = ['category', 'transacted_at', 'created_at']
     search_fields = ['notes', 'category__name']
@@ -30,6 +32,7 @@ class TransactionAdmin(ModelAdmin):
 
 @admin.register(Expense)
 class ExpenseAdmin(ModelAdmin):
+    form = ExpenseForm
     list_display = ['amount', 'category', 'notes', 'transacted_at', 'created_at']
     list_filter = ['category', 'transacted_at', 'created_at']
     search_fields = ['notes', 'category__name']
@@ -56,6 +59,7 @@ class ExpenseAdmin(ModelAdmin):
 
 @admin.register(Income)
 class IncomeAdmin(ModelAdmin):
+    form = IncomeForm
     list_display = ['amount', 'category', 'notes', 'transacted_at', 'created_at']
     list_filter = ['category', 'transacted_at', 'created_at']
     search_fields = ['notes', 'category__name']

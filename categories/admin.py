@@ -14,6 +14,18 @@ class ColorPickerWidget(Widget):
         context['widget']['type'] = 'hidden'
         context['widget']['attrs']['class'] = 'color-picker-input'
         return context
+    
+    def render(self, name, value, attrs=None, renderer=None):
+        """Fallback render method if template is not found"""
+        try:
+            return super().render(name, value, attrs, renderer)
+        except:
+            # Fallback to simple color input if template fails
+            final_attrs = self.build_attrs(attrs)
+            final_attrs['type'] = 'color'
+            final_attrs['class'] = 'color-picker-input'
+            attrs_html = ' '.join([f'{k}="{v}"' for k, v in final_attrs.items()])
+            return f'<input name="{name}" value="{value or "#3B82F6"}" {attrs_html} />'
 
 
 class CategoryAdminForm(forms.ModelForm):

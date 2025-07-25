@@ -178,6 +178,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Calendar Configuration
+USE_JALALI_CALENDAR = True  # Set to True to use Jalali calendar, False for Gregorian
+CALENDAR_TYPE = 'jalali'  # Options: 'jalali' or 'gregorian'
+
+# Dashboard Configuration
+DEFAULT_DASHBOARD_MONTH = 'current'  # Options: 'current', 'previous', 'next', or specific date like '2024-07'
+
 # Django Unfold Configuration
 UNFOLD = {
     "SITE_TITLE": "Expense Management",

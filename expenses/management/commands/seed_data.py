@@ -24,63 +24,208 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Successfully generated seed data!'))
 
     def create_categories(self):
-        """Create expense and income categories"""
-        self.stdout.write('Creating categories...')
+        """Create hierarchical expense and income categories"""
+        self.stdout.write('Creating hierarchical categories...')
         
-        # Expense categories with descriptions and colors
+        # Main expense categories with their children
         expense_categories = [
-            {'name': 'Food & Dining', 'description': 'Restaurants, groceries, and dining expenses', 'color': '#FF6B6B'},
-            {'name': 'Transportation', 'description': 'Gas, public transport, and vehicle expenses', 'color': '#4ECDC4'},
-            {'name': 'Shopping', 'description': 'Clothing, electronics, and general shopping', 'color': '#45B7D1'},
-            {'name': 'Entertainment', 'description': 'Movies, concerts, and leisure activities', 'color': '#96CEB4'},
-            {'name': 'Utilities', 'description': 'Electricity, water, internet, and phone bills', 'color': '#FFEAA7'},
-            {'name': 'Healthcare', 'description': 'Medical expenses, prescriptions, and health services', 'color': '#DDA0DD'},
-            {'name': 'Education', 'description': 'Courses, books, and educational materials', 'color': '#98D8C8'},
-            {'name': 'Travel', 'description': 'Vacations, business trips, and travel expenses', 'color': '#F7DC6F'},
-            {'name': 'Home & Garden', 'description': 'Furniture, maintenance, and home improvement', 'color': '#BB8FCE'},
-            {'name': 'Personal Care', 'description': 'Haircuts, spa, and personal hygiene products', 'color': '#85C1E9'}
+            {
+                'name': 'Food & Dining',
+                'color': '#FF6B6B',
+                'description': 'Restaurants, groceries, and dining expenses',
+                'children': [
+                    {'name': 'Groceries', 'color': '#FF8E8E'},
+                    {'name': 'Restaurants', 'color': '#FFB3B3'},
+                    {'name': 'Takeout', 'color': '#FFD8D8'},
+                ]
+            },
+            {
+                'name': 'Transportation',
+                'color': '#4ECDC4',
+                'description': 'Gas, public transport, and vehicle expenses',
+                'children': [
+                    {'name': 'Fuel', 'color': '#6ED7CF'},
+                    {'name': 'Public Transport', 'color': '#8EE1D9'},
+                    {'name': 'Maintenance', 'color': '#AEEBE3'},
+                ]
+            },
+            {
+                'name': 'Entertainment',
+                'color': '#45B7D1',
+                'description': 'Movies, concerts, and leisure activities',
+                'children': [
+                    {'name': 'Movies', 'color': '#65C7E1'},
+                    {'name': 'Games', 'color': '#85D7F1'},
+                    {'name': 'Hobbies', 'color': '#A5E7F1'},
+                ]
+            },
+            {
+                'name': 'Healthcare',
+                'color': '#96CEB4',
+                'description': 'Medical expenses, prescriptions, and health services',
+                'children': [
+                    {'name': 'Medical', 'color': '#B6DED4'},
+                    {'name': 'Dental', 'color': '#D6EEE4'},
+                    {'name': 'Pharmacy', 'color': '#F6FEF4'},
+                ]
+            },
+            {
+                'name': 'Shopping',
+                'color': '#FFEAA7',
+                'description': 'Clothing, electronics, and general shopping',
+                'children': [
+                    {'name': 'Clothing', 'color': '#FFF2C7'},
+                    {'name': 'Electronics', 'color': '#FFFAD7'},
+                    {'name': 'Home & Garden', 'color': '#FFFFE7'},
+                ]
+            },
+            {
+                'name': 'Education',
+                'color': '#DDA0DD',
+                'description': 'Courses, books, and educational materials',
+                'children': [
+                    {'name': 'Tuition', 'color': '#EDB0ED'},
+                    {'name': 'Books', 'color': '#FDC0FD'},
+                    {'name': 'Courses', 'color': '#FFD0FF'},
+                ]
+            },
+            {
+                'name': 'Travel',
+                'color': '#98D8C8',
+                'description': 'Vacations, business trips, and travel expenses',
+                'children': [
+                    {'name': 'Accommodation', 'color': '#B8E8D8'},
+                    {'name': 'Flights', 'color': '#D8F8E8'},
+                    {'name': 'Activities', 'color': '#F8FFF8'},
+                ]
+            },
+            {
+                'name': 'Personal Care',
+                'color': '#F7DC6F',
+                'description': 'Haircuts, spa, and personal hygiene products',
+                'children': [
+                    {'name': 'Hair & Beauty', 'color': '#F7EC8F'},
+                    {'name': 'Fitness', 'color': '#F7FCAF'},
+                    {'name': 'Wellness', 'color': '#F7FFCF'},
+                ]
+            }
         ]
         
-        # Income categories with descriptions and colors
+        # Main income categories with their children
         income_categories = [
-            {'name': 'Salary', 'description': 'Regular employment income', 'color': '#2ECC71'},
-            {'name': 'Freelance', 'description': 'Freelance and contract work income', 'color': '#3498DB'},
-            {'name': 'Investment', 'description': 'Dividends, interest, and investment returns', 'color': '#F39C12'},
-            {'name': 'Bonus', 'description': 'Performance bonuses and incentives', 'color': '#E74C3C'},
-            {'name': 'Side Business', 'description': 'Income from side businesses and ventures', 'color': '#9B59B6'},
-            {'name': 'Rental Income', 'description': 'Income from property and equipment rentals', 'color': '#1ABC9C'}
+            {
+                'name': 'Employment',
+                'color': '#2ECC71',
+                'description': 'Regular employment income',
+                'children': [
+                    {'name': 'Salary', 'color': '#4EDC91'},
+                    {'name': 'Bonus', 'color': '#6EECB1'},
+                    {'name': 'Overtime', 'color': '#8EFCD1'},
+                ]
+            },
+            {
+                'name': 'Business',
+                'color': '#3498DB',
+                'description': 'Freelance and business income',
+                'children': [
+                    {'name': 'Freelance', 'color': '#54A8FB'},
+                    {'name': 'Side Business', 'color': '#74B8FF'},
+                    {'name': 'Consulting', 'color': '#94C8FF'},
+                ]
+            },
+            {
+                'name': 'Investments',
+                'color': '#F39C12',
+                'description': 'Dividends, interest, and investment returns',
+                'children': [
+                    {'name': 'Dividends', 'color': '#F3BC32'},
+                    {'name': 'Interest', 'color': '#F3DC52'},
+                    {'name': 'Capital Gains', 'color': '#F3FC72'},
+                ]
+            },
+            {
+                'name': 'Other Income',
+                'color': '#E74C3C',
+                'description': 'Other sources of income',
+                'children': [
+                    {'name': 'Rental Income', 'color': '#E7645C'},
+                    {'name': 'Gifts', 'color': '#E7847C'},
+                    {'name': 'Refunds', 'color': '#E7A49C'},
+                ]
+            }
         ]
         
         # Create expense categories
-        for category_data in expense_categories:
-            Category.objects.get_or_create(
-                name=category_data['name'],
+        for main_cat_data in expense_categories:
+            main_category, created = Category.objects.get_or_create(
+                name=main_cat_data['name'],
+                type=Category.CategoryType.EXPENSE,
+                parent=None,
                 defaults={
-                    'type': Category.CategoryType.EXPENSE,
-                    'description': category_data['description'],
-                    'color': category_data['color']
+                    'color': main_cat_data['color'],
+                    'description': main_cat_data['description']
                 }
             )
+            
+            if created:
+                self.stdout.write(f'Created main expense category: {main_category.name}')
+            
+            # Create child categories
+            for child_data in main_cat_data['children']:
+                child_category, child_created = Category.objects.get_or_create(
+                    name=child_data['name'],
+                    type=Category.CategoryType.EXPENSE,
+                    parent=main_category,
+                    defaults={
+                        'color': child_data['color'],
+                        'description': f'Subcategory of {main_category.name}'
+                    }
+                )
+                
+                if child_created:
+                    self.stdout.write(f'  Created child category: {child_category.name}')
         
         # Create income categories
-        for category_data in income_categories:
-            Category.objects.get_or_create(
-                name=category_data['name'],
+        for main_cat_data in income_categories:
+            main_category, created = Category.objects.get_or_create(
+                name=main_cat_data['name'],
+                type=Category.CategoryType.INCOME,
+                parent=None,
                 defaults={
-                    'type': Category.CategoryType.INCOME,
-                    'description': category_data['description'],
-                    'color': category_data['color']
+                    'color': main_cat_data['color'],
+                    'description': main_cat_data['description']
                 }
             )
+            
+            if created:
+                self.stdout.write(f'Created main income category: {main_category.name}')
+            
+            # Create child categories
+            for child_data in main_cat_data['children']:
+                child_category, child_created = Category.objects.get_or_create(
+                    name=child_data['name'],
+                    type=Category.CategoryType.INCOME,
+                    parent=main_category,
+                    defaults={
+                        'color': child_data['color'],
+                        'description': f'Subcategory of {main_category.name}'
+                    }
+                )
+                
+                if child_created:
+                    self.stdout.write(f'  Created child category: {child_category.name}')
         
-        self.stdout.write(f'Created {len(expense_categories)} expense and {len(income_categories)} income categories')
+        self.stdout.write('Successfully created hierarchical categories')
 
     def generate_expense_data(self):
         """Generate daily expenses for 6 months"""
         self.stdout.write('Generating expense data...')
         
-        # Get expense categories
-        expense_categories = Category.objects.filter(type=Category.CategoryType.EXPENSE)
+        # Get child expense categories (categories with parents)
+        expense_categories = Category.objects.filter(
+            type=Category.CategoryType.EXPENSE,
+            parent__isnull=False
+        )
         
         # Generate data for the last 6 months
         end_date = timezone.now()
@@ -120,8 +265,11 @@ class Command(BaseCommand):
         """Generate weekly income for 6 months"""
         self.stdout.write('Generating income data...')
         
-        # Get income categories
-        income_categories = Category.objects.filter(type=Category.CategoryType.INCOME)
+        # Get child income categories (categories with parents)
+        income_categories = Category.objects.filter(
+            type=Category.CategoryType.INCOME,
+            parent__isnull=False
+        )
         
         # Generate data for the last 6 months
         end_date = timezone.now()
@@ -160,16 +308,45 @@ class Command(BaseCommand):
     def get_realistic_expense_amount(self, category_name):
         """Generate realistic expense amounts based on category"""
         amount_ranges = {
-            'Food & Dining': (5000, 25000),  # $5-25
-            'Transportation': (2000, 15000),  # $2-15
-            'Shopping': (3000, 50000),        # $3-50
-            'Entertainment': (2000, 20000),   # $2-20
-            'Utilities': (5000, 30000),       # $5-30
-            'Healthcare': (1000, 25000),      # $1-25
-            'Education': (5000, 100000),      # $5-100
-            'Travel': (10000, 100000),        # $10-100
-            'Home & Garden': (2000, 30000),   # $2-30
-            'Personal Care': (1000, 15000),   # $1-15
+            # Food & Dining children
+            'Groceries': (8000, 35000),       # $8-35
+            'Restaurants': (12000, 45000),    # $12-45
+            'Takeout': (5000, 25000),         # $5-25
+            
+            # Transportation children
+            'Fuel': (15000, 35000),           # $15-35
+            'Public Transport': (2000, 8000), # $2-8
+            'Maintenance': (5000, 50000),     # $5-50
+            
+            # Entertainment children
+            'Movies': (3000, 15000),          # $3-15
+            'Games': (2000, 25000),           # $2-25
+            'Hobbies': (1000, 30000),         # $1-30
+            
+            # Healthcare children
+            'Medical': (5000, 50000),         # $5-50
+            'Dental': (8000, 80000),          # $8-80
+            'Pharmacy': (1000, 15000),        # $1-15
+            
+            # Shopping children
+            'Clothing': (5000, 50000),        # $5-50
+            'Electronics': (10000, 100000),   # $10-100
+            'Home & Garden': (2000, 40000),   # $2-40
+            
+            # Education children
+            'Tuition': (50000, 500000),       # $50-500
+            'Books': (2000, 25000),           # $2-25
+            'Courses': (10000, 100000),       # $10-100
+            
+            # Travel children
+            'Accommodation': (20000, 200000), # $20-200
+            'Flights': (50000, 300000),       # $50-300
+            'Activities': (5000, 50000),      # $5-50
+            
+            # Personal Care children
+            'Hair & Beauty': (3000, 25000),   # $3-25
+            'Fitness': (2000, 20000),         # $2-20
+            'Wellness': (1000, 15000),        # $1-15
         }
         
         min_amount, max_amount = amount_ranges.get(category_name, (1000, 10000))
@@ -178,12 +355,25 @@ class Command(BaseCommand):
     def get_realistic_income_amount(self, category_name):
         """Generate realistic income amounts based on category"""
         amount_ranges = {
+            # Employment children
             'Salary': (500000, 800000),       # $500-800
-            'Freelance': (50000, 200000),     # $50-200
-            'Investment': (10000, 100000),    # $10-100
             'Bonus': (100000, 500000),        # $100-500
+            'Overtime': (50000, 200000),      # $50-200
+            
+            # Business children
+            'Freelance': (50000, 200000),     # $50-200
             'Side Business': (20000, 150000), # $20-150
+            'Consulting': (100000, 300000),   # $100-300
+            
+            # Investments children
+            'Dividends': (10000, 100000),     # $10-100
+            'Interest': (5000, 50000),        # $5-50
+            'Capital Gains': (20000, 200000), # $20-200
+            
+            # Other Income children
             'Rental Income': (100000, 300000), # $100-300
+            'Gifts': (5000, 50000),           # $5-50
+            'Refunds': (1000, 25000),         # $1-25
         }
         
         min_amount, max_amount = amount_ranges.get(category_name, (10000, 100000))
@@ -192,125 +382,308 @@ class Command(BaseCommand):
     def get_expense_note(self, category_name):
         """Generate realistic expense notes"""
         notes = {
-            'Food & Dining': [
-                'Lunch at restaurant',
-                'Grocery shopping',
-                'Coffee break',
-                'Dinner with friends',
-                'Fast food',
-                'Takeout order',
+            # Food & Dining children
+            'Groceries': [
+                'Weekly grocery shopping',
+                'Supermarket visit',
+                'Fresh produce',
+                'Pantry items',
+                'Household essentials',
+                'Organic groceries',
+                'Bulk purchase',
+                'Local market',
+                'Food staples',
+                'Kitchen supplies'
+            ],
+            'Restaurants': [
+                'Dinner at restaurant',
+                'Lunch with colleagues',
+                'Date night dinner',
+                'Business lunch',
+                'Family dinner out',
+                'Celebration meal',
+                'Fine dining',
+                'Casual dining',
                 'Weekend brunch',
-                'Office lunch',
-                'Snacks',
-                'Dinner date'
+                'Special occasion'
             ],
-            'Transportation': [
-                'Gas station',
-                'Public transport',
-                'Uber ride',
-                'Parking fee',
-                'Car maintenance',
-                'Taxi fare',
-                'Bus ticket',
-                'Train ticket',
+            'Takeout': [
+                'Food delivery',
+                'Takeout order',
+                'Fast food',
+                'Pizza delivery',
+                'Chinese takeout',
+                'Burger order',
+                'Sushi delivery',
+                'Late night food',
+                'Office lunch delivery',
+                'Quick meal'
+            ],
+            
+            # Transportation children
+            'Fuel': [
+                'Gas station fill-up',
                 'Fuel refill',
-                'Car wash'
+                'Diesel purchase',
+                'Premium gas',
+                'Regular unleaded',
+                'Fuel for trip',
+                'Gas station visit',
+                'Fuel purchase',
+                'Tank refill',
+                'Gasoline'
             ],
-            'Shopping': [
-                'Clothing purchase',
-                'Electronics',
-                'Books',
-                'Gift for friend',
-                'Home decor',
-                'Sport equipment',
-                'Accessories',
-                'Online purchase',
-                'Mall shopping',
-                'Department store'
+            'Public Transport': [
+                'Bus fare',
+                'Train ticket',
+                'Metro pass',
+                'Subway fare',
+                'Public transport',
+                'Commuter ticket',
+                'Transit card',
+                'Bus pass',
+                'Train fare',
+                'Public transportation'
             ],
-            'Entertainment': [
+            'Maintenance': [
+                'Car maintenance',
+                'Oil change',
+                'Tire replacement',
+                'Car repair',
+                'Vehicle service',
+                'Car wash',
+                'Auto parts',
+                'Mechanic service',
+                'Car inspection',
+                'Vehicle maintenance'
+            ],
+            
+            # Entertainment children
+            'Movies': [
                 'Movie tickets',
-                'Concert tickets',
-                'Gym membership',
-                'Netflix subscription',
-                'Game purchase',
-                'Theater show',
-                'Sports event',
+                'Cinema visit',
+                'Film screening',
+                'Movie night',
+                'Theater tickets',
+                'Film festival',
+                'Movie rental',
+                'Streaming service',
+                'Cinema snacks',
+                'Movie date'
+            ],
+            'Games': [
+                'Video game purchase',
+                'Gaming subscription',
+                'Board games',
+                'Mobile games',
+                'Gaming accessories',
+                'Game console',
+                'Online gaming',
+                'Gaming tournament',
+                'Game download',
+                'Gaming equipment'
+            ],
+            'Hobbies': [
                 'Hobby supplies',
-                'Music subscription',
-                'Outdoor activity'
+                'Craft materials',
+                'Art supplies',
+                'Sports equipment',
+                'Musical instruments',
+                'Photography gear',
+                'Gardening supplies',
+                'DIY materials',
+                'Collection items',
+                'Hobby workshop'
             ],
-            'Utilities': [
-                'Electricity bill',
-                'Water bill',
-                'Internet service',
-                'Phone bill',
-                'Gas bill',
-                'Garbage service',
-                'Cable TV',
-                'Home insurance',
-                'Property tax',
-                'Maintenance fee'
-            ],
-            'Healthcare': [
+            
+            # Healthcare children
+            'Medical': [
                 'Doctor visit',
-                'Pharmacy',
-                'Dental checkup',
-                'Eye exam',
-                'Prescription',
+                'Medical consultation',
+                'Health checkup',
+                'Specialist appointment',
+                'Medical procedure',
                 'Health insurance',
                 'Medical supplies',
-                'Therapy session',
-                'Lab test',
-                'Emergency room'
+                'Lab tests',
+                'Emergency room',
+                'Medical treatment'
             ],
-            'Education': [
-                'Online course',
-                'Textbooks',
-                'Workshop fee',
-                'Certification exam',
-                'Tutoring session',
-                'Language class',
-                'Professional training',
-                'Conference ticket',
-                'Study materials',
-                'Academic subscription'
+            'Dental': [
+                'Dental checkup',
+                'Dental cleaning',
+                'Dental procedure',
+                'Tooth extraction',
+                'Dental filling',
+                'Dental insurance',
+                'Orthodontic treatment',
+                'Dental surgery',
+                'Dental consultation',
+                'Dental care'
             ],
-            'Travel': [
-                'Hotel booking',
-                'Flight tickets',
-                'Car rental',
-                'Vacation expenses',
-                'Travel insurance',
-                'Tour guide',
-                'Souvenirs',
-                'Restaurant abroad',
-                'Local transport',
-                'Activity booking'
+            'Pharmacy': [
+                'Prescription medication',
+                'Over-the-counter drugs',
+                'Pharmacy visit',
+                'Medicine purchase',
+                'Health supplements',
+                'First aid supplies',
+                'Pharmacy consultation',
+                'Medication refill',
+                'Health products',
+                'Pharmacy items'
+            ],
+            
+            # Shopping children
+            'Clothing': [
+                'Clothing purchase',
+                'New outfit',
+                'Shoes purchase',
+                'Accessories',
+                'Fashion items',
+                'Work clothes',
+                'Casual wear',
+                'Formal attire',
+                'Seasonal clothing',
+                'Clothing store'
+            ],
+            'Electronics': [
+                'Electronics purchase',
+                'Phone upgrade',
+                'Computer parts',
+                'Gadgets',
+                'Tech accessories',
+                'Electronic devices',
+                'Smartphone',
+                'Laptop purchase',
+                'Tech equipment',
+                'Electronics store'
             ],
             'Home & Garden': [
+                'Home decor',
                 'Furniture purchase',
                 'Garden supplies',
                 'Home improvement',
-                'Cleaning supplies',
                 'Kitchen items',
                 'Bedding',
-                'Tools',
-                'Paint supplies',
-                'Lighting fixtures',
-                'Storage solutions'
+                'Home accessories',
+                'Garden tools',
+                'Home renovation',
+                'Household items'
             ],
-            'Personal Care': [
+            
+            # Education children
+            'Tuition': [
+                'University tuition',
+                'School fees',
+                'Course tuition',
+                'Educational program',
+                'Academic fees',
+                'Training program',
+                'Workshop fee',
+                'Certification course',
+                'Professional training',
+                'Educational institution'
+            ],
+            'Books': [
+                'Textbook purchase',
+                'Educational books',
+                'Reference materials',
+                'Study guides',
+                'Academic books',
+                'Learning materials',
+                'Course books',
+                'Educational resources',
+                'Study materials',
+                'Book purchase'
+            ],
+            'Courses': [
+                'Online course',
+                'Professional course',
+                'Skill development',
+                'Training course',
+                'Educational workshop',
+                'Learning program',
+                'Certification course',
+                'Skill training',
+                'Educational course',
+                'Professional development'
+            ],
+            
+            # Travel children
+            'Accommodation': [
+                'Hotel booking',
+                'Vacation rental',
+                'Resort stay',
+                'Hostel booking',
+                'Lodging expenses',
+                'Accommodation fee',
+                'Hotel room',
+                'Vacation accommodation',
+                'Travel lodging',
+                'Stay booking'
+            ],
+            'Flights': [
+                'Flight tickets',
+                'Airplane tickets',
+                'Air travel',
+                'Flight booking',
+                'Airline tickets',
+                'Flight reservation',
+                'Air travel expenses',
+                'Flight purchase',
+                'Airline booking',
+                'Flight fare'
+            ],
+            'Activities': [
+                'Tourist activities',
+                'Sightseeing tour',
+                'Adventure activities',
+                'Travel experiences',
+                'Tour guide',
+                'Travel activities',
+                'Vacation activities',
+                'Tourist attractions',
+                'Travel experiences',
+                'Activity booking'
+            ],
+            
+            # Personal Care children
+            'Hair & Beauty': [
                 'Haircut',
+                'Hair styling',
+                'Beauty salon',
+                'Hair treatment',
+                'Beauty services',
+                'Hair coloring',
+                'Beauty treatment',
+                'Salon visit',
+                'Hair care',
+                'Beauty appointment'
+            ],
+            'Fitness': [
+                'Gym membership',
+                'Fitness class',
+                'Personal training',
+                'Sports membership',
+                'Fitness equipment',
+                'Workout session',
+                'Fitness program',
+                'Gym fees',
+                'Fitness training',
+                'Sports activities'
+            ],
+            'Wellness': [
                 'Spa treatment',
-                'Cosmetics',
-                'Skincare products',
-                'Hair products',
-                'Nail salon',
                 'Massage therapy',
-                'Beauty products',
-                'Personal hygiene',
-                'Wellness products'
+                'Wellness products',
+                'Health supplements',
+                'Wellness services',
+                'Relaxation treatment',
+                'Wellness program',
+                'Health products',
+                'Wellness consultation',
+                'Self-care items'
             ]
         }
         
@@ -319,36 +692,18 @@ class Command(BaseCommand):
     def get_income_note(self, category_name):
         """Generate realistic income notes"""
         notes = {
+            # Employment children
             'Salary': [
                 'Monthly salary',
                 'Bi-weekly paycheck',
                 'Regular salary',
                 'Payroll deposit',
-                'Salary payment'
-            ],
-            'Freelance': [
-                'Web development project',
-                'Design work',
-                'Consulting fee',
-                'Writing assignment',
-                'Graphic design',
-                'Programming work',
-                'Translation service',
-                'Photography job',
-                'Marketing project',
-                'Content creation'
-            ],
-            'Investment': [
-                'Stock dividends',
-                'Interest payment',
-                'Bond coupon',
-                'Mutual fund distribution',
-                'Real estate dividend',
-                'Investment return',
-                'Portfolio income',
-                'Capital gains',
-                'Dividend payment',
-                'Investment income'
+                'Salary payment',
+                'Base salary',
+                'Regular income',
+                'Employment salary',
+                'Monthly paycheck',
+                'Salary deposit'
             ],
             'Bonus': [
                 'Performance bonus',
@@ -362,6 +717,32 @@ class Command(BaseCommand):
                 'Project completion bonus',
                 'Milestone bonus'
             ],
+            'Overtime': [
+                'Overtime pay',
+                'Extra hours',
+                'Additional work',
+                'Overtime compensation',
+                'Extra time pay',
+                'Extended hours',
+                'Overtime hours',
+                'Additional compensation',
+                'Extra work pay',
+                'Overtime income'
+            ],
+            
+            # Business children
+            'Freelance': [
+                'Web development project',
+                'Design work',
+                'Consulting fee',
+                'Writing assignment',
+                'Graphic design',
+                'Programming work',
+                'Translation service',
+                'Photography job',
+                'Marketing project',
+                'Content creation'
+            ],
             'Side Business': [
                 'Online store sales',
                 'Tutoring income',
@@ -374,6 +755,58 @@ class Command(BaseCommand):
                 'Entrepreneurial income',
                 'Business profit'
             ],
+            'Consulting': [
+                'Consulting services',
+                'Professional advice',
+                'Business consulting',
+                'Expert consultation',
+                'Advisory services',
+                'Professional consulting',
+                'Business advice',
+                'Consulting project',
+                'Expert services',
+                'Professional guidance'
+            ],
+            
+            # Investments children
+            'Dividends': [
+                'Stock dividends',
+                'Dividend payment',
+                'Investment dividends',
+                'Share dividends',
+                'Portfolio dividends',
+                'Stock income',
+                'Dividend income',
+                'Investment return',
+                'Shareholder dividend',
+                'Dividend distribution'
+            ],
+            'Interest': [
+                'Interest payment',
+                'Bank interest',
+                'Savings interest',
+                'Investment interest',
+                'Bond interest',
+                'Interest income',
+                'Financial interest',
+                'Interest return',
+                'Interest payment',
+                'Interest earnings'
+            ],
+            'Capital Gains': [
+                'Capital gains',
+                'Investment profit',
+                'Stock gains',
+                'Portfolio gains',
+                'Investment return',
+                'Capital appreciation',
+                'Investment profit',
+                'Gains on investment',
+                'Portfolio return',
+                'Investment gains'
+            ],
+            
+            # Other Income children
             'Rental Income': [
                 'Apartment rent',
                 'Property rental',
@@ -385,6 +818,30 @@ class Command(BaseCommand):
                 'Commercial property rent',
                 'Vacation rental',
                 'Rental property income'
+            ],
+            'Gifts': [
+                'Monetary gift',
+                'Birthday gift',
+                'Holiday gift',
+                'Wedding gift',
+                'Gift money',
+                'Cash gift',
+                'Present money',
+                'Gift payment',
+                'Gift income',
+                'Gift received'
+            ],
+            'Refunds': [
+                'Purchase refund',
+                'Tax refund',
+                'Insurance refund',
+                'Service refund',
+                'Product refund',
+                'Overpayment refund',
+                'Refund payment',
+                'Money back',
+                'Refund received',
+                'Refund income'
             ]
         }
         

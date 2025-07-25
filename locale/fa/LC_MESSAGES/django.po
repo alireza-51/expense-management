@@ -31,6 +31,10 @@ msgid "Financial Dashboard"
 msgstr "داشبورد مالی"
 
 #: templates/admin/index.html:220
+msgid "Financial Overview"
+msgstr "نمای کلی مالی"
+
+#: templates/admin/index.html:220
 msgid "Financial Overview (Last 30 Days)"
 msgstr "نمای کلی مالی (۳۰ روز گذشته)"
 
@@ -85,6 +89,168 @@ msgstr "تغییر"
 #: templates/admin/index.html:305
 msgid "You don't have permission to view or edit anything."
 msgstr "شما مجوز مشاهده یا ویرایش چیزی را ندارید."
+
+# Statistics page translations
+msgid "Financial Statistics"
+msgstr "آمار مالی"
+
+msgid "Detailed analytics and insights"
+msgstr "تحلیل‌های تفصیلی و بینش‌ها"
+
+msgid "Back to Dashboard"
+msgstr "بازگشت به داشبورد"
+
+msgid "View Detailed Statistics"
+msgstr "مشاهده آمار تفصیلی"
+
+msgid "Statistics"
+msgstr "آمار"
+
+msgid "Previous Month"
+msgstr "ماه قبل"
+
+msgid "Next Month"
+msgstr "ماه بعد"
+
+msgid "Previous"
+msgstr "قبل"
+
+msgid "Next"
+msgstr "بعد"
+
+msgid "Current"
+msgstr "فعلی"
+
+msgid "Current Month"
+msgstr "ماه فعلی"
+
+msgid "Trend Analysis"
+msgstr "تحلیل روند"
+
+msgid "Performance Metrics"
+msgstr "معیارهای عملکرد"
+
+msgid "Category Analysis"
+msgstr "تحلیل دسته‌بندی"
+
+msgid "Budget Tracking"
+msgstr "پیگیری بودجه"
+
+msgid "Time-based Analysis"
+msgstr "تحلیل مبتنی بر زمان"
+
+msgid "Smart Recommendations"
+msgstr "توصیه‌های هوشمند"
+
+msgid "Expense Trend"
+msgstr "روند هزینه"
+
+msgid "Income Trend"
+msgstr "روند درآمد"
+
+msgid "Net Change"
+msgstr "تغییر خالص"
+
+msgid "Savings Rate"
+msgstr "نرخ پس‌انداز"
+
+msgid "Budget Limit"
+msgstr "محدودیت بودجه"
+
+msgid "Actual Spending"
+msgstr "هزینه واقعی"
+
+msgid "Remaining"
+msgstr "باقی‌مانده"
+
+msgid "used"
+msgstr "استفاده شده"
+
+msgid "Daily Expense Avg"
+msgstr "میانگین روزانه هزینه"
+
+msgid "Daily Income Avg"
+msgstr "میانگین روزانه درآمد"
+
+msgid "Peak Spending Day"
+msgstr "روز اوج هزینه"
+
+msgid "No specific recommendations at this time. Keep up the good work!"
+msgstr "در حال حاضر توصیه خاصی وجود ندارد. به کار خوب ادامه دهید!"
+
+msgid "No data available for chart"
+msgstr "داده‌ای برای نمودار موجود نیست"
+
+msgid "Sunday"
+msgstr "یکشنبه"
+
+msgid "Monday"
+msgstr "دوشنبه"
+
+msgid "Tuesday"
+msgstr "سه‌شنبه"
+
+msgid "Wednesday"
+msgstr "چهارشنبه"
+
+msgid "Thursday"
+msgstr "پنج‌شنبه"
+
+msgid "Friday"
+msgstr "جمعه"
+
+msgid "Saturday"
+msgstr "شنبه"
+
+# Transaction Lists
+msgid "Monthly Transactions"
+msgstr "تراکنش‌های ماهانه"
+
+msgid "Expense Transactions"
+msgstr "تراکنش‌های هزینه"
+
+msgid "Income Transactions"
+msgstr "تراکنش‌های درآمد"
+
+msgid "transactions"
+msgstr "تراکنش‌ها"
+
+msgid "Date"
+msgstr "تاریخ"
+
+msgid "Category"
+msgstr "دسته‌بندی"
+
+msgid "Amount"
+msgstr "مبلغ"
+
+msgid "No expense transactions for this month"
+msgstr "هیچ تراکنش هزینه‌ای برای این ماه وجود ندارد"
+
+msgid "No income transactions for this month"
+msgstr "هیچ تراکنش درآمدی برای این ماه وجود ندارد"
+
+# Filter Controls
+msgid "Expense Category"
+msgstr "دسته‌بندی هزینه"
+
+msgid "Income Category"
+msgstr "دسته‌بندی درآمد"
+
+msgid "All Categories"
+msgstr "همه دسته‌بندی‌ها"
+
+msgid "Min Amount"
+msgstr "حداقل مبلغ"
+
+msgid "Max Amount"
+msgstr "حداکثر مبلغ"
+
+msgid "Apply Filters"
+msgstr "اعمال فیلترها"
+
+msgid "Clear"
+msgstr "پاک کردن"
 
 #: templates/admin/index.html:235
 msgid "English"
