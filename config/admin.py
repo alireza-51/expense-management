@@ -14,6 +14,50 @@ admin.site.site_title = _("Expense Management")
 admin.site.index_title = _("Welcome to Expense Management Administration")
 
 
+def get_flag_icons():
+    """Get flag icons for language switcher"""
+    try:
+        from base.models import FlagIcon
+        flags = FlagIcon.objects.filter(is_active=True)
+        flag_dict = {}
+        for flag in flags:
+            flag_dict[flag.language_code] = flag.flag_url
+        return flag_dict
+    except:
+        # Fallback to default flags if model doesn't exist
+        return {
+            'en': None,
+            'fa': None
+        }
+
+
+def get_site_branding():
+    """Get site branding configuration"""
+    try:
+        from base.models import SiteBranding
+        branding = SiteBranding.get_active()
+        if branding:
+            return {
+                'site_title': branding.site_title,
+                'site_header': branding.site_header,
+                'logo_url': branding.logo.url if branding.logo else None,
+                'favicon_url': branding.favicon.url if branding.favicon else None,
+            }
+    except:
+        pass
+    
+    # Fallback to default branding
+    return {
+        'site_title': 'Expense Management',
+        'site_header': 'Expense Management System',
+        'logo_url': None,
+        'favicon_url': None,
+    }
+
+
+
+
+
 def switch_language(request):
     """Switch language and redirect back"""
     language = request.GET.get('lang', 'en')
@@ -146,6 +190,7 @@ original_index = admin.site.index
 def custom_index(request, extra_context=None):
     """Custom index method that includes dashboard data"""
     dashboard_data = get_dashboard_data()
+    
     if extra_context is None:
         extra_context = {}
     extra_context.update(dashboard_data)

@@ -6,64 +6,33 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-    .language-switcher {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        background: white;
-        border-radius: 8px;
-        padding: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border: 1px solid #e5e7eb;
+
+    
+    /* RTL Layout Support */
+    .rtl-layout {
+        direction: rtl;
+        text-align: right;
     }
     
-    .language-switcher select {
-        padding: 5px 10px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        background: white;
-        font-size: 14px;
-        min-width: 120px;
+    .rtl-layout .dashboard-section,
+    .rtl-layout .app-management {
+        text-align: right;
     }
     
-    .language-switcher select:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    .rtl-layout .stat-card {
+        text-align: center;
     }
     
-    .language-option {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    .rtl-layout .category-item {
+        flex-direction: row-reverse;
     }
     
-    .flag-icon {
-        width: 16px;
-        height: 12px;
-        border-radius: 2px;
-        display: inline-block;
+    .rtl-layout .app-module th {
+        text-align: right;
     }
     
-    .flag-en {
-        background: linear-gradient(to bottom, #012169 0%, #012169 50%, #ffffff 50%, #ffffff 100%);
-        position: relative;
-    }
-    
-    .flag-en::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, #c8102e 30%, #c8102e 35%, transparent 35%),
-                    linear-gradient(-45deg, transparent 30%, #c8102e 30%, #c8102e 35%, transparent 35%);
-    }
-    
-    .flag-fa {
-        background: linear-gradient(to bottom, #239f40 0%, #239f40 33%, #ffffff 33%, #ffffff 66%, #da0000 66%, #da0000 100%);
+    .rtl-layout .app-module td {
+        text-align: center;
     }
     
     .dashboard-section {
@@ -164,11 +133,8 @@
         padding-bottom: 10px;
     }
     
-    /* Improved Application Management Styling */
+    /* Restore Django Unfold default app management styling */
     .app-management {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 25px;
         margin-top: 30px;
     }
     
@@ -176,23 +142,23 @@
         background: white;
         border-radius: 8px;
         margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         overflow: hidden;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid var(--unfold-color-gray-200);
     }
     
-    .app-module:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
+    /* Restore Django Unfold default table styles */
     .app-module table {
         width: 100%;
         border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
     .app-module caption {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--unfold-color-primary-600);
         color: white;
         padding: 15px 20px;
         font-weight: 600;
@@ -210,12 +176,12 @@
     }
     
     .app-module tr {
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--unfold-color-gray-100);
         transition: background-color 0.2s ease;
     }
     
     .app-module tr:hover {
-        background-color: #f8fafc;
+        background-color: var(--unfold-color-gray-50);
     }
     
     .app-module tr:last-child {
@@ -226,18 +192,18 @@
         padding: 12px 20px;
         text-align: left;
         font-weight: 500;
-        color: #374151;
+        color: var(--unfold-color-gray-700);
         width: 60%;
     }
     
     .app-module th a {
-        color: #1f2937;
+        color: var(--unfold-color-gray-900);
         text-decoration: none;
         font-weight: 500;
     }
     
     .app-module th a:hover {
-        color: #667eea;
+        color: var(--unfold-color-primary-600);
         text-decoration: underline;
     }
     
@@ -245,10 +211,12 @@
         padding: 12px 20px;
         text-align: center;
         vertical-align: middle;
+        color: var(--unfold-color-gray-700);
     }
     
+    /* Restore Django Unfold default button styles */
     .addlink {
-        background: #10b981;
+        background: var(--unfold-color-primary-600);
         color: white;
         padding: 6px 12px;
         border-radius: 6px;
@@ -259,13 +227,13 @@
     }
     
     .addlink:hover {
-        background: #059669;
+        background: var(--unfold-color-primary-700);
         color: white;
         text-decoration: none;
     }
     
     .changelink {
-        background: #3b82f6;
+        background: var(--unfold-color-primary-600);
         color: white;
         padding: 6px 12px;
         border-radius: 6px;
@@ -276,13 +244,13 @@
     }
     
     .changelink:hover {
-        background: #2563eb;
+        background: var(--unfold-color-primary-700);
         color: white;
         text-decoration: none;
     }
     
     .viewlink {
-        background: #6b7280;
+        background: var(--unfold-color-gray-600);
         color: white;
         padding: 6px 12px;
         border-radius: 6px;
@@ -293,7 +261,7 @@
     }
     
     .viewlink:hover {
-        background: #4b5563;
+        background: var(--unfold-color-gray-700);
         color: white;
         text-decoration: none;
     }
@@ -304,26 +272,82 @@
         color: #6b7280;
         font-style: italic;
     }
+    
+    /* Flag-based Language Selector */
+    .flag-language-selector {
+        position: fixed;
+        top: 15px;
+        right: 120px; /* Move further left to avoid user button */
+        z-index: 999; /* Lower z-index than user button */
+        display: flex;
+        gap: 8px;
+        background: white;
+        border-radius: 8px;
+        padding: 6px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+    }
+    
+    /* RTL layout - move to left side for Persian */
+    .rtl-layout .flag-language-selector {
+        right: auto;
+        left: 20px;
+    }
+    
+    /* Ensure user dropdown doesn't overflow in RTL */
+    .rtl-layout .unfold-user-menu {
+        left: auto !important;
+        right: 0 !important;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .flag-option {
+        width: 32px;
+        height: 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    
+    .flag-option:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .flag-option.active {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    .flag-option img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 2px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Language Switcher -->
-<div class="language-switcher">
-    <select onchange="switchLanguage(this.value)">
-        <option value="en" {% if LANGUAGE_CODE == 'en' or not LANGUAGE_CODE %}selected{% endif %}>
-            <span class="language-option">
-                <span class="flag-icon flag-en"></span>
-                {% translate "English" %}
-            </span>
-        </option>
-        <option value="fa" {% if LANGUAGE_CODE == 'fa' %}selected{% endif %}>
-            <span class="language-option">
-                <span class="flag-icon flag-fa"></span>
-                فارسی
-            </span>
-        </option>
-    </select>
+<div class="{% if LANGUAGE_CODE == 'fa' %}rtl-layout{% endif %}">
+
+<!-- Flag-based Language Selector -->
+<div class="flag-language-selector">
+    <div class="flag-option {% if LANGUAGE_CODE == 'en' or not LANGUAGE_CODE %}active{% endif %}" 
+         data-lang="en" onclick="switchLanguage('en')">
+        <img src="{% static 'flags/british.jpg' %}" alt="English" title="English" />
+    </div>
+    <div class="flag-option {% if LANGUAGE_CODE == 'fa' %}active{% endif %}" 
+         data-lang="fa" onclick="switchLanguage('fa')">
+        <img src="{% static 'flags/iran.jpeg' %}" alt="فارسی" title="فارسی" />
+    </div>
 </div>
 
 <div id="content-main">
@@ -462,6 +486,7 @@ if (typeof Chart === 'undefined') {
 </script>
 <script>
 function switchLanguage(lang) {
+    // Redirect to switch language
     window.location.href = '{% url "admin:switch_language" %}?lang=' + lang;
 }
 
@@ -596,5 +621,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Language switching function
+function switchLanguage(lang) {
+    // Update active flag
+    document.querySelectorAll('.flag-option').forEach(function(flag) {
+        flag.classList.remove('active');
+    });
+    document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+    
+    // Redirect to switch language
+    window.location.href = '{% url "admin:switch_language" %}?lang=' + lang;
+}
 </script>
+</div>
 {% endblock %} 
