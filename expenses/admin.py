@@ -9,10 +9,17 @@ from .forms import ExpenseForm, IncomeForm, TransactionForm
 class TransactionAdmin(ModelAdmin):
     form = TransactionForm
     list_display = ['amount', 'category', 'notes', 'transacted_at', 'created_at']
-    list_filter = ['category', 'transacted_at', 'created_at']
-    search_fields = ['notes', 'category__name']
+    list_filter = [
+        'transacted_at', 
+        'created_at',
+        ('notes', admin.EmptyFieldListFilter),
+        'category',
+    ]
+    search_fields = ['notes', 'category__name', 'category__parent__name']
     list_per_page = 25
     ordering = ['-transacted_at']
+    list_select_related = ['category', 'category__parent']
+    autocomplete_fields = ['category']
     
     fieldsets = (
         ('Transaction Details', {
@@ -34,10 +41,17 @@ class TransactionAdmin(ModelAdmin):
 class ExpenseAdmin(ModelAdmin):
     form = ExpenseForm
     list_display = ['amount', 'category', 'notes', 'transacted_at', 'created_at']
-    list_filter = ['category', 'transacted_at', 'created_at']
-    search_fields = ['notes', 'category__name']
+    list_filter = [
+        'transacted_at', 
+        'created_at',
+        ('notes', admin.EmptyFieldListFilter),
+        'category',
+    ]
+    search_fields = ['notes', 'category__name', 'category__parent__name']
     list_per_page = 25
     ordering = ['-transacted_at']
+    list_select_related = ['category', 'category__parent']
+    autocomplete_fields = ['category']
     
     fieldsets = (
         ('Expense Details', {
@@ -61,10 +75,17 @@ class ExpenseAdmin(ModelAdmin):
 class IncomeAdmin(ModelAdmin):
     form = IncomeForm
     list_display = ['amount', 'category', 'notes', 'transacted_at', 'created_at']
-    list_filter = ['category', 'transacted_at', 'created_at']
-    search_fields = ['notes', 'category__name']
+    list_filter = [
+        'transacted_at', 
+        'created_at',
+        ('notes', admin.EmptyFieldListFilter),
+        'category',
+    ]
+    search_fields = ['notes', 'category__name', 'category__parent__name']
     list_per_page = 25
     ordering = ['-transacted_at']
+    list_select_related = ['category', 'category__parent']
+    autocomplete_fields = ['category']
     
     fieldsets = (
         ('Income Details', {

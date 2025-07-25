@@ -41,10 +41,18 @@ class CategoryAdminForm(forms.ModelForm):
 class CategoryAdmin(ModelAdmin):
     form = CategoryAdminForm
     list_display = ['name', 'type', 'parent', 'color_display', 'description', 'created_at']
-    list_filter = ['type', 'parent', 'created_at']
-    search_fields = ['name', 'description']
+    list_filter = [
+        'type', 
+        'created_at',
+        ('description', admin.EmptyFieldListFilter),
+        'parent',
+    ]
+    search_fields = ['name', 'description', 'parent__name']
     list_per_page = 20
     ordering = ['name']
+    list_select_related = ['parent']
+    autocomplete_fields = ['parent']
+    readonly_fields = ['created_at', 'edited_at']
     
     fieldsets = (
         ('Basic Information', {
