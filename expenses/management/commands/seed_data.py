@@ -27,45 +27,49 @@ class Command(BaseCommand):
         """Create expense and income categories"""
         self.stdout.write('Creating categories...')
         
-        # Expense categories
+        # Expense categories with descriptions and colors
         expense_categories = [
-            'Food & Dining',
-            'Transportation',
-            'Shopping',
-            'Entertainment',
-            'Utilities',
-            'Healthcare',
-            'Education',
-            'Travel',
-            'Home & Garden',
-            'Personal Care'
+            {'name': 'Food & Dining', 'description': 'Restaurants, groceries, and dining expenses', 'color': '#FF6B6B'},
+            {'name': 'Transportation', 'description': 'Gas, public transport, and vehicle expenses', 'color': '#4ECDC4'},
+            {'name': 'Shopping', 'description': 'Clothing, electronics, and general shopping', 'color': '#45B7D1'},
+            {'name': 'Entertainment', 'description': 'Movies, concerts, and leisure activities', 'color': '#96CEB4'},
+            {'name': 'Utilities', 'description': 'Electricity, water, internet, and phone bills', 'color': '#FFEAA7'},
+            {'name': 'Healthcare', 'description': 'Medical expenses, prescriptions, and health services', 'color': '#DDA0DD'},
+            {'name': 'Education', 'description': 'Courses, books, and educational materials', 'color': '#98D8C8'},
+            {'name': 'Travel', 'description': 'Vacations, business trips, and travel expenses', 'color': '#F7DC6F'},
+            {'name': 'Home & Garden', 'description': 'Furniture, maintenance, and home improvement', 'color': '#BB8FCE'},
+            {'name': 'Personal Care', 'description': 'Haircuts, spa, and personal hygiene products', 'color': '#85C1E9'}
         ]
         
-        # Income categories
+        # Income categories with descriptions and colors
         income_categories = [
-            'Salary',
-            'Freelance',
-            'Investment',
-            'Bonus',
-            'Side Business',
-            'Rental Income'
+            {'name': 'Salary', 'description': 'Regular employment income', 'color': '#2ECC71'},
+            {'name': 'Freelance', 'description': 'Freelance and contract work income', 'color': '#3498DB'},
+            {'name': 'Investment', 'description': 'Dividends, interest, and investment returns', 'color': '#F39C12'},
+            {'name': 'Bonus', 'description': 'Performance bonuses and incentives', 'color': '#E74C3C'},
+            {'name': 'Side Business', 'description': 'Income from side businesses and ventures', 'color': '#9B59B6'},
+            {'name': 'Rental Income', 'description': 'Income from property and equipment rentals', 'color': '#1ABC9C'}
         ]
         
         # Create expense categories
-        for name in expense_categories:
+        for category_data in expense_categories:
             Category.objects.get_or_create(
-                name=name,
+                name=category_data['name'],
                 defaults={
                     'type': Category.CategoryType.EXPENSE,
+                    'description': category_data['description'],
+                    'color': category_data['color']
                 }
             )
         
         # Create income categories
-        for name in income_categories:
+        for category_data in income_categories:
             Category.objects.get_or_create(
-                name=name,
+                name=category_data['name'],
                 defaults={
                     'type': Category.CategoryType.INCOME,
+                    'description': category_data['description'],
+                    'color': category_data['color']
                 }
             )
         
@@ -94,13 +98,13 @@ class Command(BaseCommand):
                 amount = self.get_realistic_expense_amount(category.name)
                 
                 # Generate realistic notes
-                note = self.get_expense_note(category.name)
+                notes = self.get_expense_note(category.name)
                 
                 # Create expense
                 Expense.objects.create(
                     amount=amount,
                     category=category,
-                    note=note,
+                    notes=notes,
                     transacted_at=current_date.replace(
                         hour=random.randint(8, 20),
                         minute=random.randint(0, 59)
@@ -135,13 +139,13 @@ class Command(BaseCommand):
                 amount = self.get_realistic_income_amount(category.name)
                 
                 # Generate realistic notes
-                note = self.get_income_note(category.name)
+                notes = self.get_income_note(category.name)
                 
                 # Create income
                 Income.objects.create(
                     amount=amount,
                     category=category,
-                    note=note,
+                    notes=notes,
                     transacted_at=current_date.replace(
                         hour=random.randint(9, 17),
                         minute=random.randint(0, 59)
