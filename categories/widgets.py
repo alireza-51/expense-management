@@ -13,6 +13,20 @@ class HierarchicalCategoryWidget(forms.Select):
     
     def render(self, name, value, attrs=None, renderer=None):
         try:
+            # Normalize current value to a string ID if possible
+            current_value_id = None
+            if value is not None:
+                try:
+                    # Model instance
+                    if hasattr(value, 'pk') and value.pk is not None:
+                        current_value_id = str(value.pk)
+                    elif hasattr(value, 'id') and value.id is not None:
+                        current_value_id = str(value.id)
+                    else:
+                        current_value_id = str(value)
+                except Exception:
+                    current_value_id = str(value)
+
             # Get all categories of the specified type
             if self.category_type is None:
                 categories = Category.objects.all().order_by('parent__name', 'name')
@@ -33,11 +47,13 @@ class HierarchicalCategoryWidget(forms.Select):
                     children = categories.filter(parent=main_cat)
                     
                     # Main category item
-                    selected = 'selected' if str(main_cat.id) == str(value) else ''
+                    is_selected = str(main_cat.id) == str(current_value_id)
+                    selected_class = 'selected' if is_selected else ''
+                    checked_attr = 'checked' if is_selected else ''
                     has_children = 'has-children' if children.exists() else ''
                     
                     output.append(f'''
-                        <div class="category-item main-category {has_children} {selected}" 
+                        <div class="category-item main-category {has_children} {selected_class}" 
                              data-category-id="{main_cat.id}" 
                              data-category-name="{main_cat.name}"
                              style="border-left-color: {main_cat.color};">
@@ -48,7 +64,7 @@ class HierarchicalCategoryWidget(forms.Select):
                                 </span>
                                 {f'<span class="child-count">({children.count()})</span>' if children.exists() else ''}
                             </div>
-                            <input type="radio" name="{name}" value="{main_cat.id}" {selected} class="category-radio">
+                            <input type="radio" name="{name}" value="{main_cat.id}" {checked_attr} class="category-radio">
                     ''')
                     
                     # Fly-out menu for children
@@ -62,13 +78,15 @@ class HierarchicalCategoryWidget(forms.Select):
                         # Single section with all children
                         output.append('<div class="flyout-section">')
                         for child in children:
-                            selected = 'selected' if str(child.id) == str(value) else ''
+                            is_child_selected = str(child.id) == str(current_value_id)
+                            child_selected_class = 'selected' if is_child_selected else ''
+                            child_checked_attr = 'checked' if is_child_selected else ''
                             output.append(f'''
-                                <div class="flyout-child-item" 
+                                <div class="flyout-child-item {child_selected_class}" 
                                      data-category-id="{child.id}" 
                                      data-category-name="{child.name}"
                                      data-parent-id="{main_cat.id}">
-                                    <input type="radio" name="{name}" value="{child.id}" {selected} class="category-radio">
+                                    <input type="radio" name="{name}" value="{child.id}" {child_checked_attr} class="category-radio">
                                     <div class="color-square" style="background-color: {child.color};"></div>
                                     {child.name}
                                 </div>
@@ -87,6 +105,8 @@ class HierarchicalCategoryWidget(forms.Select):
                 output.append('</div>')
             
             output.append('</div>')
+            # Selected summary footer
+            output.append('<div class="selected-summary">Selected: <span class="selected-name"></span></div>')
             output.append('</div>')
             
             # Add CSS and JavaScript for the fly-out hierarchical display
@@ -208,6 +228,7 @@ class HierarchicalCategoryWidget(forms.Select):
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                position: relative;
             }
             
             .flyout-child-item:hover {
@@ -218,6 +239,17 @@ class HierarchicalCategoryWidget(forms.Select):
             .flyout-child-item.selected {
                 background-color: #e3f2fd;
                 border-color: #2196f3;
+            }
+
+            /* Visible check mark for selected child */
+            .flyout-child-item.selected::after {
+                content: '✓';
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #1d4ed8;
+                font-weight: 700;
             }
             
             .category-content {
@@ -244,8 +276,14 @@ class HierarchicalCategoryWidget(forms.Select):
                 opacity: 0;
                 position: absolute;
             }
-            
-            .category-item.selected .category-radio {
+
+            /* Show only the main category's own radio when main is selected */
+            .category-item.selected > .category-radio {
+                opacity: 1;
+            }
+
+            /* Show only the selected child item's radio, not siblings */
+            .flyout-child-item.selected .category-radio {
                 opacity: 1;
             }
             
@@ -254,6 +292,12 @@ class HierarchicalCategoryWidget(forms.Select):
                 height: 12px;
                 border-radius: 2px;
                 flex-shrink: 0;
+            }
+
+            .selected-summary {
+                margin: 8px 12px 12px 12px;
+                font-size: 12px;
+                color: #374151;
             }
             
             @keyframes flyoutSlide {
@@ -343,6 +387,10 @@ class HierarchicalCategoryWidget(forms.Select):
                     // Handle main category item clicks
                     categoryItems.forEach(function(item) {
                         item.addEventListener('click', function(e) {
+                            // Ignore clicks that originated inside the flyout menu (child area)
+                            if (e.target && e.target.closest && e.target.closest('.flyout-menu')) {
+                                return;
+                            }
                             if (e.target.type === 'radio') return;
                             
                             // Remove selected class from all items
@@ -364,14 +412,20 @@ class HierarchicalCategoryWidget(forms.Select):
                     // Handle flyout child item clicks
                     flyoutItems.forEach(function(item) {
                         item.addEventListener('click', function(e) {
+                            // Prevent bubbling to main category click handler
+                            if (e && e.stopPropagation) e.stopPropagation();
                             if (e.target.type === 'radio') return;
                             
                             // Remove selected class from all items
                             categoryItems.forEach(i => i.classList.remove('selected'));
                             flyoutItems.forEach(i => i.classList.remove('selected'));
                             
-                            // Add selected class to clicked item
+                            // Add selected class to clicked child and its main category
                             this.classList.add('selected');
+                            const mainParent = this.closest('.category-item');
+                            if (mainParent) {
+                                mainParent.classList.add('selected');
+                            }
                             
                             // Check the radio button
                             const radio = this.querySelector('.category-radio');
@@ -382,6 +436,26 @@ class HierarchicalCategoryWidget(forms.Select):
                         });
                     });
                     
+                    function updateSelectedSummary() {
+                        const summary = container.querySelector('.selected-summary .selected-name');
+                        if (!summary) return;
+                        const checked = container.querySelector('.category-radio:checked');
+                        if (!checked) { summary.textContent = ''; return; }
+                        const child = checked.closest('.flyout-child-item');
+                        if (child) {
+                            const childName = child.getAttribute('data-category-name') || '';
+                            const parent = child.closest('.category-item');
+                            const parentName = parent ? parent.getAttribute('data-category-name') || '' : '';
+                            summary.textContent = parentName && childName ? (parentName + ' → ' + childName) : (childName || parentName);
+                            return;
+                        }
+                        const main = checked.closest('.category-item');
+                        if (main) {
+                            const mainName = main.getAttribute('data-category-name') || '';
+                            summary.textContent = mainName;
+                        }
+                    }
+
                     // Handle radio button changes
                     radios.forEach(function(radio) {
                         radio.addEventListener('change', function() {
@@ -393,7 +467,13 @@ class HierarchicalCategoryWidget(forms.Select):
                             const parentItem = this.closest('.category-item, .flyout-child-item');
                             if (parentItem) {
                                 parentItem.classList.add('selected');
+                                // If this is a child, also mark its main category
+                                if (parentItem.classList.contains('flyout-child-item')) {
+                                    const mainParent = parentItem.closest('.category-item');
+                                    if (mainParent) mainParent.classList.add('selected');
+                                }
                             }
+                            updateSelectedSummary();
                         });
                     });
                     
@@ -403,7 +483,13 @@ class HierarchicalCategoryWidget(forms.Select):
                         const parentItem = checkedRadio.closest('.category-item, .flyout-child-item');
                         if (parentItem) {
                             parentItem.classList.add('selected');
+                            // If selected is a child, also mark its main category
+                            if (parentItem.classList.contains('flyout-child-item')) {
+                                const mainParent = parentItem.closest('.category-item');
+                                if (mainParent) mainParent.classList.add('selected');
+                            }
                         }
+                        updateSelectedSummary();
                     }
                     
                     // Handle flyout menu positioning
