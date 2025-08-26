@@ -16,6 +16,11 @@ class AmountFormattingAdminMixin:
             'js/amount-format.js',
             'js/jalali-noon-default.js',
         )
+        css = {
+            'all': (
+                'css/admin-responsive.css',
+            )
+        }
 
     @admin.display(description='Amount', ordering='amount')
     def amount_display(self, obj):

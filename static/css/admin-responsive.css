@@ -1,0 +1,72 @@
+/* Responsive tweaks for admin pages (forms and list views) */
+
+@media (max-width: 1024px) {
+  /* Make list tables scroll horizontally when needed */
+  .change-list .results,
+  .module .results {
+    overflow-x: auto;
+  }
+  .change-list .results table,
+  .module .results table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Full-width form fields */
+  .change-form form .form-row,
+  .changeform-container form .form-row,
+  .inline-group .inline-related {
+    display: block;
+    width: 100%;
+  }
+
+  /* Labels on top */
+  .change-form label,
+  .changeform-container label {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* Make inputs stretch */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Inline tables scroll */
+  .inline-group table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Our hierarchical category widget */
+  .hierarchical-category-container {
+    width: 100% !important;
+    min-height: 160px;
+  }
+  .hierarchical-category-container .flyout-menu {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-width: 95vw !important;
+    width: 95vw !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+

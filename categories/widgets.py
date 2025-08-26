@@ -59,12 +59,12 @@ class HierarchicalCategoryWidget(forms.Select):
                              style="border-left-color: {main_cat.color};">
                             <div class="category-content">
                                 <div class="color-square" style="background-color: {main_cat.color};"></div>
+                                <input type="radio" name="{name}" value="{main_cat.id}" {checked_attr} class="category-radio parent-radio">
                                 <span class="category-name" style="font-weight: bold;">
                                     {main_cat.name}
                                 </span>
                                 {f'<span class="child-count">({children.count()})</span>' if children.exists() else ''}
                             </div>
-                            <input type="radio" name="{name}" value="{main_cat.id}" {checked_attr} class="category-radio">
                     ''')
                     
                     # Fly-out menu for children
@@ -166,7 +166,7 @@ class HierarchicalCategoryWidget(forms.Select):
                 transition: transform 0.2s ease;
             }
             
-            .main-category.has-children:hover::after {
+            .main-category.has-children.mobile-open::after {
                 transform: rotate(90deg);
             }
             
@@ -181,18 +181,31 @@ class HierarchicalCategoryWidget(forms.Select):
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 min-width: 400px;
                 max-width: 600px;
-                z-index: 1000;
+                z-index: 1001;
                 display: none;
                 padding: 16px;
             }
             
-            .main-category:hover .flyout-menu {
+            .main-category:hover > .flyout-menu,
+            .flyout-menu:hover {
                 display: block;
                 animation: flyoutSlide 0.3s ease;
             }
-            
-            .flyout-menu:hover {
-                display: block;
+
+            /* Mobile/touch overrides: click-to-open instead of hover */
+            @media (max-width: 768px) {
+                .main-category:hover > .flyout-menu { display: none; }
+                .main-category.mobile-open > .flyout-menu { display: block; }
+                /* Allow selecting parent directly on mobile by showing its radio */
+                .main-category > .category-radio { opacity: 1; position: static; margin-left: 8px; }
+            }
+
+            .flyout-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.25);
+                z-index: 1000;
+                display: none;
             }
             
             .flyout-header {
@@ -275,6 +288,15 @@ class HierarchicalCategoryWidget(forms.Select):
             .category-radio {
                 opacity: 0;
                 position: absolute;
+            }
+
+            /* Ensure parent radio placed next to color is visible and clickable on mobile */
+            @media (max-width: 768px) {
+                .parent-radio {
+                    position: static;
+                    opacity: 1;
+                    margin: 0 8px 0 8px;
+                }
             }
 
             /* Show only the main category's own radio when main is selected */
@@ -392,6 +414,13 @@ class HierarchicalCategoryWidget(forms.Select):
                                 return;
                             }
                             if (e.target.type === 'radio') return;
+
+                            // On small screens with children: toggle handled by mobile handler, don't select parent
+                            const small = window.matchMedia('(max-width: 768px)').matches;
+                            if (small && this.classList.contains('has-children')) {
+                                // Allow the mobile-open toggle listener to run
+                                return;
+                            }
                             
                             // Remove selected class from all items
                             categoryItems.forEach(i => i.classList.remove('selected'));
@@ -492,14 +521,127 @@ class HierarchicalCategoryWidget(forms.Select):
                         updateSelectedSummary();
                     }
                     
-                    // Handle flyout menu positioning
-                    const flyoutMenus = container.querySelectorAll('.flyout-menu');
-                    flyoutMenus.forEach(function(menu) {
-                        const parentItem = menu.closest('.category-item');
-                        if (parentItem) {
-                            // Position the flyout menu at the same height as the parent item
-                            menu.style.top = '0px';
+                    function positionMenu(menu, parentItem) {
+                        if (!menu || !parentItem) return;
+                        // Reset to measure
+                        menu.style.position = 'absolute';
+                        menu.style.left = '100%';
+                        menu.style.right = 'auto';
+                        menu.style.top = '0px';
+
+                        // Ensure it's measurable
+                        const prevDisplay = menu.style.display;
+                        menu.style.display = 'block';
+                        const menuRect = menu.getBoundingClientRect();
+                        const parentRect = parentItem.getBoundingClientRect();
+                        const vw = window.innerWidth || document.documentElement.clientWidth;
+                        const vh = window.innerHeight || document.documentElement.clientHeight;
+                        const margin = 8;
+
+                        const spaceRight = vw - parentRect.right;
+                        const spaceLeft = parentRect.left;
+                        const needFixed = (menuRect.height > vh - margin * 2);
+
+                        // Flip horizontally if not enough space on the right
+                        if (spaceRight < menuRect.width + margin && spaceLeft >= menuRect.width + margin) {
+                            menu.style.left = 'auto';
+                            menu.style.right = '100%';
+                        } else if (spaceRight < menuRect.width + margin && spaceLeft < menuRect.width + margin) {
+                            // Not enough space either side: use fixed near the parent
+                            menu.style.position = 'fixed';
+                            let left = Math.max(margin, Math.min(vw - menuRect.width - margin, parentRect.right + margin));
+                            // If to the right overflows, try left of parent
+                            if (left + menuRect.width + margin > vw) {
+                                left = Math.max(margin, parentRect.left - menuRect.width - margin);
+                            }
+                            let top = Math.max(margin, Math.min(vh - menuRect.height - margin, parentRect.top));
+                            menu.style.left = left + 'px';
+                            menu.style.right = 'auto';
+                            menu.style.top = top + 'px';
+                            // Restore previous display so CSS hover controls visibility
+                            menu.style.display = prevDisplay;
+                            return;
                         }
+
+                        // Adjust vertical position: clamp within viewport if needed using fixed
+                        const projectedBottom = parentRect.top + menuRect.height;
+                        if (projectedBottom > vh - margin || needFixed) {
+                            menu.style.position = 'fixed';
+                            let leftPx;
+                            if (menu.style.right === '100%') {
+                                // opened to left of parent
+                                leftPx = Math.max(margin, parentRect.left - menuRect.width - margin);
+                            } else {
+                                leftPx = Math.min(vw - menuRect.width - margin, parentRect.right + margin);
+                            }
+                            const topPx = Math.max(margin, Math.min(vh - menuRect.height - margin, parentRect.top));
+                            menu.style.left = leftPx + 'px';
+                            menu.style.right = 'auto';
+                            menu.style.top = topPx + 'px';
+                        }
+
+                        // Restore previous display so CSS hover controls visibility
+                        menu.style.display = prevDisplay;
+                    }
+
+                    // Reposition menus on hover and on resize
+                    const flyoutMenus = container.querySelectorAll('.flyout-menu');
+                    container.querySelectorAll('.category-item.main-category').forEach(function(item){
+                        item.addEventListener('mouseenter', function(){
+                            const menu = item.querySelector('.flyout-menu');
+                            positionMenu(menu, item);
+                        });
+                    });
+                    window.addEventListener('resize', function(){
+                        flyoutMenus.forEach(function(menu){
+                            const parentItem = menu.closest('.category-item');
+                            const isVisible = window.getComputedStyle(menu).display !== 'none';
+                            if (isVisible) positionMenu(menu, parentItem);
+                        });
+                    });
+
+                    // Touch/mobile: click-to-open with overlay
+                    function isMobile() { return window.matchMedia('(max-width: 768px)').matches; }
+                    let overlay = document.querySelector('.flyout-overlay');
+                    if (!overlay) {
+                        overlay = document.createElement('div');
+                        overlay.className = 'flyout-overlay';
+                        document.body.appendChild(overlay);
+                    }
+
+                    container.querySelectorAll('.category-item.main-category').forEach(function(item){
+                        item.addEventListener('click', function(e){
+                            if (!isMobile()) return; // desktop: allow hover behavior
+                            const withinMenu = e.target && e.target.closest && e.target.closest('.flyout-menu');
+                            if (withinMenu) return;
+
+                            // Toggle mobile-open on this item; close others
+                            const opened = container.querySelectorAll('.category-item.main-category.mobile-open');
+                            opened.forEach(function(o){ if (o !== item) o.classList.remove('mobile-open'); });
+                            item.classList.toggle('mobile-open');
+
+                            const isOpen = item.classList.contains('mobile-open');
+                            overlay.style.display = isOpen ? 'block' : 'none';
+
+                            const menu = item.querySelector('.flyout-menu');
+                            positionMenu(menu, item);
+
+                            // If click target was the radio or label area, allow selection; otherwise prevent selecting the parent when just opening submenu
+                            const clickedRadio = e.target && e.target.closest && e.target.closest('.category-radio');
+                            const clickedName = e.target && e.target.closest && e.target.closest('.category-name');
+                            if (isOpen && !clickedRadio && !clickedName) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return false;
+                            }
+                        });
+                    });
+
+                    overlay.addEventListener('click', function(){
+                        container.querySelectorAll('.category-item.main-category.mobile-open').forEach(function(o){
+                            o.classList.remove('mobile-open');
+                        });
+                        overlay.style.display = 'none';
                     });
                 });
             });
