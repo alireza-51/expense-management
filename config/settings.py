@@ -144,13 +144,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = os.getenv('DJANGO_LANGUAGE_CODE', 'en')
 
-TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'UTC')
+# TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'UTC')
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+# USE_TZ = True
 
 # Internationalization settings
 LANGUAGES = [
