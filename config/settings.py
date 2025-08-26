@@ -11,21 +11,37 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Do not auto-load .env files in production environments
+# Environment variables should be provided by the runtime (e.g., Docker, system env)
+
+def get_bool_env(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+def get_list_env(name, default=None, delimiter=","):
+    value = os.getenv(name)
+    if not value:
+        return default or []
+    return [item.strip() for item in value.split(delimiter) if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ruk!g%xwp%i5xdu44_3v2^r##i_@8cnabg_#ykdhjrgea#w6i!'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-ruk!g%xwp%i5xdu44_3v2^r##i_@8cnabg_#ykdhjrgea#w6i!')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_bool_env('DJANGO_DEBUG', False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = get_list_env('DJANGO_ALLOWED_HOSTS', [])
 
 
 # Application definition
@@ -94,12 +110,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'expense',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.getenv('DB_NAME', 'expense'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432')
     }
 }
 
@@ -126,9 +142,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en'
+LANGUAGE_CODE = os.getenv('DJANGO_LANGUAGE_CODE', 'en')
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'UTC')
 
 USE_I18N = True
 
@@ -179,11 +195,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Calendar Configuration
-USE_JALALI_CALENDAR = True  # Set to True to use Jalali calendar, False for Gregorian
-CALENDAR_TYPE = 'jalali'  # Options: 'jalali' or 'gregorian'
+USE_JALALI_CALENDAR = get_bool_env('DJANGO_USE_JALALI_CALENDAR', True)  # Set to True to use Jalali calendar, False for Gregorian
+CALENDAR_TYPE = os.getenv('DJANGO_CALENDAR_TYPE', 'jalali')  # Options: 'jalali' or 'gregorian'
 
 # Dashboard Configuration
-DEFAULT_DASHBOARD_MONTH = 'current'  # Options: 'current', 'previous', 'next', or specific date like '2024-07'
+DEFAULT_DASHBOARD_MONTH = os.getenv('DJANGO_DEFAULT_DASHBOARD_MONTH', 'current')  # Options: 'current', 'previous', 'next', or specific date like '2024-07'
 
 # Django Unfold Configuration
 UNFOLD = {
