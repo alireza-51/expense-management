@@ -269,12 +269,6 @@ msgstr "توضیحات"
 msgid "Color"
 msgstr "رنگ"
 
-msgid "Category"
-msgstr "دسته‌بندی"
-
-msgid "Amount"
-msgstr "مبلغ"
-
 msgid "Transaction Date"
 msgstr "تاریخ تراکنش"
 
