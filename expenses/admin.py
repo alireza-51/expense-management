@@ -14,6 +14,7 @@ class AmountFormattingAdminMixin:
     class Media:
         js = (
             'js/amount-format.js',
+            'js/jalali-noon-default.js',
         )
 
     @admin.display(description='Amount', ordering='amount')
