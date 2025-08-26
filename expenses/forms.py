@@ -3,6 +3,21 @@ from .models import Expense, Income, Transaction
 from categories.widgets import HierarchicalCategoryField
 from categories.models import Category
 
+# Try to use Jalali admin widgets if available; otherwise fall back to HTML5 datetime-local
+try:
+    from jalali_date.widgets import AdminSplitJalaliDateTime
+except Exception:
+    AdminSplitJalaliDateTime = None
+
+
+def jalali_datetime_widget():
+    if AdminSplitJalaliDateTime:
+        try:
+            return AdminSplitJalaliDateTime()
+        except Exception:
+            pass
+    return forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'})
+
 
 class TransactionForm(forms.ModelForm):
     """Custom form for Transaction with hierarchical category selection"""
@@ -18,7 +33,7 @@ class TransactionForm(forms.ModelForm):
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'transacted_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'transacted_at': jalali_datetime_widget(),
         }
 
 
@@ -37,7 +52,7 @@ class ExpenseForm(forms.ModelForm):
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'transacted_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'transacted_at': jalali_datetime_widget(),
         }
     
     def clean_category(self):
@@ -63,7 +78,7 @@ class IncomeForm(forms.ModelForm):
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'transacted_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'transacted_at': jalali_datetime_widget(),
         }
     
     def clean_category(self):
