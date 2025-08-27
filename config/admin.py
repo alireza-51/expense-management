@@ -156,18 +156,18 @@ def get_dashboard_data(request=None, month_offset=0, specific_date=None):
             chart_data['income'].append(float(income_amount))
         
         # If no data, create some sample data for testing
-        if not chart_data['dates']:
-            print("No financial data available for the selected month - showing sample data")
-            from datetime import date, timedelta
-            today = date.today()
-            for i in range(7):
-                test_date = today - timedelta(days=i)
-                chart_data['dates'].append(test_date.strftime('%Y-%m-%d'))
-                chart_data['expenses'].append(1000.0 + (i * 500))  # Sample expense data
-                chart_data['income'].append(2000.0 + (i * 300))   # Sample income data
-            chart_data['dates'].reverse()
-            chart_data['expenses'].reverse()
-            chart_data['income'].reverse()
+        # if not chart_data['dates']:
+        #     print("No financial data available for the selected month - showing sample data")
+        #     from datetime import date, timedelta
+        #     today = date.today()
+        #     for i in range(7):
+        #         test_date = today - timedelta(days=i)
+        #         chart_data['dates'].append(test_date.strftime('%Y-%m-%d'))
+        #         chart_data['expenses'].append(1000.0 + (i * 500))  # Sample expense data
+        #         chart_data['income'].append(2000.0 + (i * 300))   # Sample income data
+        #     chart_data['dates'].reverse()
+        #     chart_data['expenses'].reverse()
+        #     chart_data['income'].reverse()
         
         # Debug: Print chart data to console
         print(f"Calendar type: {calendar_type}")
