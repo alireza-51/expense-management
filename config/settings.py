@@ -39,7 +39,7 @@ def get_list_env(name, default=None, delimiter=","):
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-ruk!g%xwp%i5xdu44_3v2^r##i_@8cnabg_#ykdhjrgea#w6i!')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_bool_env('DJANGO_DEBUG', False)
+DEBUG = get_bool_env('DJANGO_DEBUG', True)
 
 ALLOWED_HOSTS = get_list_env('DJANGO_ALLOWED_HOSTS', [])
 
