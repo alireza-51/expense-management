@@ -12,14 +12,19 @@ class ColorPickerWidget(Widget):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context['widget']['type'] = 'hidden'
-        context['widget']['attrs']['class'] = 'color-picker-input'
+        # Ensure the class is properly set
+        if 'class' not in context['widget']['attrs']:
+            context['widget']['attrs']['class'] = 'color-picker-input'
+        else:
+            context['widget']['attrs']['class'] += ' color-picker-input'
         return context
     
     def render(self, name, value, attrs=None, renderer=None):
         """Fallback render method if template is not found"""
         try:
             return super().render(name, value, attrs, renderer)
-        except:
+        except Exception as e:
+            print(f"Color picker template error: {e}")
             # Fallback to simple color input if template fails
             final_attrs = self.build_attrs(attrs)
             final_attrs['type'] = 'color'

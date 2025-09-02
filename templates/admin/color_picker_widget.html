@@ -1,6 +1,6 @@
 {% load static %}
 <div class="color-picker-container">
-    <input type="{{ widget.type }}" name="{{ widget.name }}" value="{{ widget.value|default:'#3B82F6' }}" {{ widget.attrs|safe }} />
+    <input type="{{ widget.type }}" name="{{ widget.name }}" value="{{ widget.value|default:'#3B82F6' }}" {{ widget.attrs|safe }} class="color-picker-input" />
     <div class="color-picker-preview" style="background-color: {{ widget.value|default:'#3B82F6' }}; width: 40px; height: 40px; border-radius: 6px; border: 3px solid #666; cursor: pointer; display: inline-block; margin-left: 10px;"></div>
     <div class="color-picker-palette" style="display: none; position: absolute; background: white; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; margin-top: 5px;">
         <div class="color-grid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px;">
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const containers = document.querySelectorAll('.color-picker-container');
     
     containers.forEach(function(container) {
-        const input = container.querySelector('.color-picker-input');
+        const input = container.querySelector('input[type="hidden"]');
         const preview = container.querySelector('.color-picker-preview');
         const palette = container.querySelector('.color-picker-palette');
         const colorOptions = container.querySelectorAll('.color-option');
@@ -66,6 +66,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update border to show selected color
                 colorOptions.forEach(opt => opt.style.border = '2px solid transparent');
                 this.style.border = '2px solid #000';
+                
+                // Trigger change event on the input
+                const event = new Event('change', { bubbles: true });
+                input.dispatchEvent(event);
             });
         });
         
@@ -78,12 +82,25 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Reset borders
             colorOptions.forEach(opt => opt.style.border = '2px solid transparent');
+            
+            // Trigger change event on the input
+            const event = new Event('change', { bubbles: true });
+            input.dispatchEvent(event);
         });
         
         // Update preview when input changes
         input.addEventListener('input', function() {
             preview.style.backgroundColor = this.value;
         });
+        
+        // Initialize selected color border
+        const currentColor = input.value;
+        if (currentColor) {
+            const matchingOption = Array.from(colorOptions).find(option => option.dataset.color === currentColor);
+            if (matchingOption) {
+                matchingOption.style.border = '2px solid #000';
+            }
+        }
     });
 });
 </script> 
