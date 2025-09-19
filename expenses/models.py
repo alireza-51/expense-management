@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from base.models import BaseModel
@@ -5,6 +6,12 @@ from categories.models import Category
 
 
 class Transaction(BaseModel):
+    workspace = models.ForeignKey(
+        to='workspaces.Workspace',
+        on_delete=models.CASCADE,
+        related_name='transactions',
+        null=True
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
@@ -18,7 +25,8 @@ class Transaction(BaseModel):
     )
     transacted_at = models.DateTimeField(_('Transaction Date'))
     notes = models.TextField(_('Notes'), blank=True)
-    
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+
     class Meta:
         verbose_name = _('Transaction')
         verbose_name_plural = _('Transactions')
