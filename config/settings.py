@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'base',
     'categories',
     'expenses',
+    'workspaces',
 ]
 
 MIDDLEWARE = [
@@ -98,6 +99,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',  # Add i18n context processor
+                'workspaces.context_processors.current_workspace',
             ],
         },
     },
@@ -174,6 +176,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'workspaces.middlewares.WorkspaceMiddleware',
 ]
 
 
