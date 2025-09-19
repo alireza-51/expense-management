@@ -415,6 +415,51 @@
         object-fit: cover;
         border-radius: 2px;
     }
+
+    /* Workspace Selector */
+    .workspace-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: white;
+        border-radius: 8px;
+        padding: 8px 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+        max-width: 280px;
+    }
+
+    .workspace-label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .workspace-dropdown {
+        flex: 1;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #374151;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .workspace-dropdown:hover {
+        border-color: var(--unfold-color-primary-400, #3b82f6);
+        background: #fff;
+    }
+
+    .workspace-dropdown:focus {
+        outline: none;
+        border-color: var(--unfold-color-primary-600, #2563eb);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
 </style>
 {% endblock %}
 
@@ -432,6 +477,25 @@
         <img src="{% static 'flags/iran.jpeg' %}" alt="فارسی" title="فارسی" />
     </div>
 </div>
+
+{% if workspaces %}
+<div class="workspace-selector">
+    <form method="POST" action="{% url 'admin:switch_workspace' %}">
+        {% csrf_token %}
+        <label for="workspace_id" class="workspace-label">
+            🌐 {% translate "Workspace" %}
+        </label>
+        <select name="workspace_id" id="workspace_id" class="workspace-dropdown" onchange="this.form.submit()">
+            {% for ws in workspaces %}
+                <option value="{{ ws.id }}"
+                    {% if current_workspace and ws.id == current_workspace.id %}selected{% endif %}>
+                    {{ ws.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+{% endif %}
 
 <div id="content-main">
     <!-- Financial Dashboard Section -->

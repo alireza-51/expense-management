@@ -1,12 +1,13 @@
 from django.contrib import admin
 from django.shortcuts import render
 from django.urls import path
-from django.db.models import Sum, Q
-from django.utils import timezone
+from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, activate, get_language, check_for_language
 from django.http import HttpResponseRedirect
 from django.conf import settings
-from datetime import datetime, timedelta
+
+from workspaces import views
+
 
 # Customize the default admin site
 admin.site.site_header = _("Expense Management System")
@@ -77,7 +78,7 @@ def get_dashboard_data(request=None, month_offset=0, specific_date=None):
         # Import here to avoid circular imports
         from expenses.models import Transaction, Expense, Income
         from categories.models import Category
-        from base.utils import get_month_range, format_date_for_display, get_month_title
+        from base.utils import get_month_range, get_month_title
         
         # Get month range based on calendar type setting and navigation
         calendar_type = getattr(settings, 'CALENDAR_TYPE', 'gregorian')
@@ -88,7 +89,8 @@ def get_dashboard_data(request=None, month_offset=0, specific_date=None):
         expenses_data = Transaction.objects.filter(
             category__type=Category.CategoryType.EXPENSE,
             transacted_at__date__gte=start_date,
-            transacted_at__date__lte=end_date
+            transacted_at__date__lte=end_date,
+            workspace=request.current_workspace
         ).values('transacted_at__date').annotate(
             total=Sum('amount')
         ).order_by('transacted_at__date')
@@ -97,20 +99,23 @@ def get_dashboard_data(request=None, month_offset=0, specific_date=None):
         income_data = Transaction.objects.filter(
             category__type=Category.CategoryType.INCOME,
             transacted_at__date__gte=start_date,
-            transacted_at__date__lte=end_date
+            transacted_at__date__lte=end_date,
+            workspace=request.current_workspace
         ).values('transacted_at__date').annotate(
             total=Sum('amount')
         ).order_by('transacted_at__date')
         
         # Get category breakdown
         expense_categories = Category.objects.filter(
-            type=Category.CategoryType.EXPENSE
+            type=Category.CategoryType.EXPENSE,
+            transactions__workspace=request.current_workspace
         ).annotate(
             total_amount=Sum('transactions__amount')
         ).filter(total_amount__isnull=False).order_by('-total_amount')[:5]
         
         income_categories = Category.objects.filter(
-            type=Category.CategoryType.INCOME
+            type=Category.CategoryType.INCOME,
+            transactions__workspace=request.current_workspace
         ).annotate(
             total_amount=Sum('transactions__amount')
         ).filter(total_amount__isnull=False).order_by('-total_amount')[:5]
@@ -170,15 +175,15 @@ def get_dashboard_data(request=None, month_offset=0, specific_date=None):
         #     chart_data['income'].reverse()
         
         # Debug: Print chart data to console
-        print(f"Calendar type: {calendar_type}")
-        print(f"Start date: {start_date}, End date: {end_date}")
-        print(f"Number of expense records: {len(expenses_data)}")
-        print(f"Number of income records: {len(income_data)}")
-        print(f"Chart dates: {chart_data['dates']}")
-        print(f"Chart expenses: {chart_data['expenses']}")
-        print(f"Chart income: {chart_data['income']}")
-        print(f"Total expenses: {total_expenses}")
-        print(f"Total income: {total_income}")
+        # print(f"Calendar type: {calendar_type}")
+        # print(f"Start date: {start_date}, End date: {end_date}")
+        # print(f"Number of expense records: {len(expenses_data)}")
+        # print(f"Number of income records: {len(income_data)}")
+        # print(f"Chart dates: {chart_data['dates']}")
+        # print(f"Chart expenses: {chart_data['expenses']}")
+        # print(f"Chart income: {chart_data['income']}")
+        # print(f"Total expenses: {total_expenses}")
+        # print(f"Total income: {total_income}")
         
         return {
             'chart_data': chart_data,
@@ -203,7 +208,15 @@ def get_dashboard_data(request=None, month_offset=0, specific_date=None):
         }
 
 
-def get_hierarchical_category_data(category_type, start_date, end_date, category_filter=None, min_amount=None, max_amount=None):
+def get_hierarchical_category_data(
+    category_type,
+    workspace,
+    start_date, 
+    end_date, 
+    category_filter=None, 
+    min_amount=None, 
+    max_amount=None
+):
     """Get hierarchical category data for pie chart visualization"""
     from categories.models import Category
     from expenses.models import Transaction
@@ -212,7 +225,8 @@ def get_hierarchical_category_data(category_type, start_date, end_date, category
     # Base query for transactions in the date range
     base_query = Q(
         transactions__transacted_at__date__gte=start_date,
-        transactions__transacted_at__date__lte=end_date
+        transactions__transacted_at__date__lte=end_date,
+        transactions__workspace=workspace
     )
     
     # Apply amount filters if provided
@@ -235,7 +249,8 @@ def get_hierarchical_category_data(category_type, start_date, end_date, category
     ).annotate(
         total_amount=Sum('children__transactions__amount', filter=Q(
             children__transactions__transacted_at__date__gte=start_date,
-            children__transactions__transacted_at__date__lte=end_date
+            children__transactions__transacted_at__date__lte=end_date,
+            children__transactions__workspace=workspace
         ))
     ).filter(total_amount__isnull=False, total_amount__gt=0).order_by('-total_amount')
     
@@ -251,7 +266,8 @@ def get_hierarchical_category_data(category_type, start_date, end_date, category
                 ).annotate(
                     total_amount=Sum('children__transactions__amount', filter=Q(
                         children__transactions__transacted_at__date__gte=start_date,
-                        children__transactions__transacted_at__date__lte=end_date
+                        children__transactions__transacted_at__date__lte=end_date,
+                        children__transactions__workspace=workspace
                     ))
                 ).filter(total_amount__isnull=False, total_amount__gt=0)
             else:
@@ -266,12 +282,11 @@ def get_hierarchical_category_data(category_type, start_date, end_date, category
         # Get children categories with their amounts
         children_data = []
         children = Category.objects.filter(
-            parent=category,
+            Q(parent=category) | Q(id=category.id),
             type=category_type
         ).annotate(
             total_amount=Sum('transactions__amount', filter=base_query)
         ).filter(total_amount__isnull=False, total_amount__gt=0).order_by('-total_amount')
-        
         for child in children:
             children_data.append({
                 'id': child.id,
@@ -289,7 +304,7 @@ def get_hierarchical_category_data(category_type, start_date, end_date, category
             'percentage': 0,  # Will be calculated in template
             'children': children_data
         })
-    
+
     # Calculate percentages
     total_amount = sum(item['amount'] for item in pie_data)
     for item in pie_data:
@@ -302,12 +317,11 @@ def get_statistics_data(request=None, month_offset=0, expense_category_filter=No
     """Get detailed statistics data for the statistics page"""
     try:
         # Import here to avoid circular imports
-        from expenses.models import Transaction, Expense, Income
+        from expenses.models import Transaction
         from categories.models import Category
         from base.utils import get_month_range, get_month_title
-        from django.db.models import Sum, Avg, Count, Q
-        from datetime import datetime, timedelta
-        import calendar
+        from django.db.models import Sum, Count
+        from datetime import timedelta
         
         # Get month range
         calendar_type = getattr(settings, 'CALENDAR_TYPE', 'gregorian')
@@ -316,7 +330,8 @@ def get_statistics_data(request=None, month_offset=0, expense_category_filter=No
         # Get current month data
         current_month_transactions = Transaction.objects.filter(
             transacted_at__date__gte=start_date,
-            transacted_at__date__lte=end_date
+            transacted_at__date__lte=end_date,
+            workspace=request.current_workspace,
         )
         
         # Get previous month data for comparison
@@ -324,7 +339,8 @@ def get_statistics_data(request=None, month_offset=0, expense_category_filter=No
         prev_end_date = start_date - timedelta(days=1)
         prev_month_transactions = Transaction.objects.filter(
             transacted_at__date__gte=prev_start_date,
-            transacted_at__date__lte=prev_end_date
+            transacted_at__date__lte=prev_end_date,
+            workspace=request.current_workspace
         )
         
         # Calculate basic metrics
@@ -361,7 +377,8 @@ def get_statistics_data(request=None, month_offset=0, expense_category_filter=No
         
         # Get top spending categories
         top_expense_categories = Category.objects.filter(
-            type=Category.CategoryType.EXPENSE
+            type=Category.CategoryType.EXPENSE,
+            transactions__workspace=request.current_workspace
         ).annotate(
             total_amount=Sum('transactions__amount'),
             transaction_count=Count('transactions')
@@ -372,7 +389,8 @@ def get_statistics_data(request=None, month_offset=0, expense_category_filter=No
         
         # Get hierarchical category data for pie chart
         hierarchical_expense_data = get_hierarchical_category_data(
-            Category.CategoryType.EXPENSE, 
+            Category.CategoryType.EXPENSE,
+            request.current_workspace,
             start_date, 
             end_date,
             expense_category_filter,
@@ -382,7 +400,8 @@ def get_statistics_data(request=None, month_offset=0, expense_category_filter=No
         
         # Get top income categories
         top_income_categories = Category.objects.filter(
-            type=Category.CategoryType.INCOME
+            type=Category.CategoryType.INCOME,
+            transactions__workspace=request.current_workspace
         ).annotate(
             total_amount=Sum('transactions__amount'),
             transaction_count=Count('transactions')
@@ -551,17 +570,19 @@ original_index = admin.site.index
 
 def custom_index(request, extra_context=None):
     """Custom index method that includes dashboard data"""
-    # Get month navigation parameters
     month_offset = int(request.GET.get('month_offset', 0))
     specific_date = request.GET.get('date', None)
-    
+
     dashboard_data = get_dashboard_data(request, month_offset, specific_date)
-    
+
     if extra_context is None:
         extra_context = {}
     extra_context.update(dashboard_data)
     extra_context['month_offset'] = month_offset
     extra_context['specific_date'] = specific_date
+    extra_context['workspaces'] = request.user.workspaces.all() if request.user.is_authenticated else []
+    extra_context['current_workspace'] = getattr(request, 'current_workspace', None)
+
     return original_index(request, extra_context)
 
 # Replace the index method
@@ -638,6 +659,7 @@ def custom_get_urls():
         path('dashboard/', admin.site.admin_view(dashboard_view), name='dashboard'),
         path('statistics/', admin.site.admin_view(statistics_view), name='statistics'),
         path('switch-language/', admin.site.admin_view(switch_language), name='switch_language'),
+        path('switch-workspace/', admin.site.admin_view(views.switch_workspace), name='switch_workspace'),
     ]
     return custom_urls + urls
 
