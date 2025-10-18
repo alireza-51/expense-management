@@ -13,5 +13,5 @@ def create_user_workspace(sender, instance, created, **kwargs):
     if created:
         Workspace.objects.create(
             name=f"{instance.username}'s Workspace",
-            owner=instance  # Assuming your Workspace has an 'owner' field
+            owner=instance
         )
