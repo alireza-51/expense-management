@@ -11,41 +11,6 @@ class BaseModel(models.Model):
         abstract = True
 
 
-class SiteBranding(BaseModel):
-    site_title = models.CharField(_('Site Title'), max_length=100, default='Expense Management')
-    site_header = models.CharField(_('Site Header'), max_length=100, default='Expense Management System')
-    logo = models.ImageField(
-        _('Logo'),
-        upload_to='branding/',
-        blank=True,
-        null=True,
-        help_text=_('Upload your custom logo (recommended size: 200x50px)')
-    )
-    favicon = models.ImageField(
-        _('Favicon'),
-        upload_to='branding/',
-        blank=True,
-        null=True,
-        help_text=_('Upload favicon (recommended size: 32x32px)')
-    )
-    is_active = models.BooleanField(_('Active'), default=True)
-    
-    class Meta:
-        verbose_name = _('Site Branding')
-        verbose_name_plural = _('Site Branding')
-    
-    def __str__(self):
-        return f"Site Branding - {self.site_title}"
-    
-    @classmethod
-    def get_active(cls):
-        """Get the active site branding configuration"""
-        return cls.objects.filter(is_active=True).first()
-
-
-
-
-
 class FlagIcon(BaseModel):
     LANGUAGE_CHOICES = [
         ('en', 'English'),

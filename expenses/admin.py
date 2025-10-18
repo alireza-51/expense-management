@@ -61,7 +61,6 @@ class AmountFormattingAdminMixin:
         return formfield
 
 
-@admin.register(Transaction)
 class TransactionAdmin(AmountFormattingAdminMixin, ModelAdmin):
     form = TransactionForm
     list_display = ['amount_display', 'category', 'notes', 'transacted_at_jalali', 'created_at_jalali']
@@ -82,80 +81,52 @@ class TransactionAdmin(AmountFormattingAdminMixin, ModelAdmin):
             'fields': ('amount', 'category', 'notes', 'transacted_at')
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'edited_at'),
+            'fields': ('created_at', 'edited_at', 'created_by'),
             'classes': ('collapse',)
         }),
     )
+
+    readonly_fields = ['created_at', 'edited_at', 'created_by']
     
-    readonly_fields = ['created_at', 'edited_at']
-    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "workspace" and not request.user.is_superuser:
+            kwargs["queryset"] = request.user.workspaces.all()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('category')
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.workspace and getattr(request, "current_workspace", None):
+            obj.workspace = request.current_workspace
+        obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+        obj.created_by = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Expense)
-class ExpenseAdmin(AmountFormattingAdminMixin, ModelAdmin):
+class ExpenseAdmin(TransactionAdmin):
     form = ExpenseForm
-    list_display = ['amount_display', 'category', 'notes', 'transacted_at_jalali', 'created_at_jalali']
-    list_filter = [
-        'transacted_at', 
-        'created_at',
-        ('notes', admin.EmptyFieldListFilter),
-        'category',
-    ]
-    search_fields = ['notes', 'category__name', 'category__parent__name']
-    list_per_page = 25
-    ordering = ['-transacted_at']
-    list_select_related = ['category', 'category__parent']
-    autocomplete_fields = ['category']
-    
-    fieldsets = (
-        ('Expense Details', {
-            'fields': ('amount', 'category', 'notes', 'transacted_at')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'edited_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    readonly_fields = ['created_at', 'edited_at']
-    
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('category').filter(
+        qs = super().get_queryset(request).select_related('category').filter(
             category__type=Category.CategoryType.EXPENSE
         )
+        if getattr(request, "current_workspace", None):
+            return qs.filter(workspace=request.current_workspace)
+        return qs.none()
 
 
 @admin.register(Income)
-class IncomeAdmin(AmountFormattingAdminMixin, ModelAdmin):
+class IncomeAdmin(TransactionAdmin):
     form = IncomeForm
-    list_display = ['amount_display', 'category', 'notes', 'transacted_at_jalali', 'created_at_jalali']
-    list_filter = [
-        'transacted_at', 
-        'created_at',
-        ('notes', admin.EmptyFieldListFilter),
-        'category',
-    ]
-    search_fields = ['notes', 'category__name', 'category__parent__name']
-    list_per_page = 25
-    ordering = ['-transacted_at']
-    list_select_related = ['category', 'category__parent']
-    autocomplete_fields = ['category']
-    
-    fieldsets = (
-        ('Income Details', {
-            'fields': ('amount', 'category', 'notes', 'transacted_at')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'edited_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    readonly_fields = ['created_at', 'edited_at']
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('category').filter(
+        qs = super().get_queryset(request).select_related('category').filter(
             category__type=Category.CategoryType.INCOME
         )
+        if getattr(request, "current_workspace", None):
+            return qs.filter(workspace=request.current_workspace)
+        return qs.none()

@@ -28,7 +28,6 @@ admin.site.get_urls = config.admin.custom_get_urls
 
 urlpatterns = [
     path('', admin.site.urls),
-    # path('', include('base.urls')),
     # path('categories/', include('categories.urls')),
     # path('expenses/', include('expenses.urls')),
 ]

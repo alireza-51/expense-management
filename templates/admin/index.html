@@ -6,415 +6,419 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-
-    
-    /* RTL Layout Support */
-    .rtl-layout {
-        direction: rtl;
-        text-align: right;
-    }
-    
-    .rtl-layout .dashboard-section,
-    .rtl-layout .app-management {
-        text-align: right;
-    }
-    
-    .rtl-layout .stat-card {
-        text-align: center;
-    }
-    
-    .rtl-layout .category-item {
-        flex-direction: row-reverse;
-    }
-    
-    .rtl-layout .app-module th {
-        text-align: right;
-    }
-    
-    .rtl-layout .app-module td {
-        text-align: center;
-    }
-    
-    .dashboard-section {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-    
-    .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
-        padding: 15px;
-        text-align: center;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    
-    .stat-label {
-        font-size: 0.9rem;
-        opacity: 0.9;
-    }
-    
-    .chart-container {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        height: 400px;
-        position: relative;
-    }
-    
-    .chart-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 15px;
-        color: #374151;
-    }
-    
-    .categories-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 15px;
-    }
-    
-    .category-card {
-        background: white;
-        border-radius: 8px;
-        padding: 15px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .category-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid #f3f4f6;
-    }
-    
-    .category-item:last-child {
-        border-bottom: none;
-    }
-    
-    .category-name {
-        font-weight: 500;
-    }
-    
-    .category-amount {
-        font-weight: bold;
-        color: #059669;
-    }
-    
-    .expense-amount {
-        color: #dc2626;
-    }
-    
-    .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #e5e7eb;
-        padding-bottom: 10px;
-    }
-    
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #374151;
-        margin: 0;
-    }
-    
-    .dashboard-actions {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    
-    .month-navigation {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-    
-    .statistics-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        color: white;
-        text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-    }
-    
-    .statistics-link:hover {
-        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .nav-btn {
-        padding: 6px 12px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        border: 1px solid #d1d5db;
-    }
-    
-    .nav-btn.prev-month {
-        background: #f3f4f6;
-        color: #374151;
-    }
-    
-    .nav-btn.prev-month:hover {
-        background: #e5e7eb;
-        color: #1f2937;
-    }
-    
-    .nav-btn.current-month {
-        background: var(--unfold-color-primary-600);
-        color: white;
-        border-color: var(--unfold-color-primary-600);
-    }
-    
-    .nav-btn.current-month:hover {
-        background: var(--unfold-color-primary-700);
-        color: white;
-    }
-    
-    .nav-btn.next-month {
-        background: #f3f4f6;
-        color: #374151;
-    }
-    
-    .nav-btn.next-month:hover {
-        background: #e5e7eb;
-        color: #1f2937;
-    }
-    
-    /* Restore Django Unfold default app management styling */
-    .app-management {
-        margin-top: 30px;
-    }
-    
-    .app-module {
-        background: white;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        border: 1px solid var(--unfold-color-gray-200);
-    }
-    
-    /* Restore Django Unfold default table styles */
-    .app-module table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .app-module caption {
-        background: var(--unfold-color-primary-600);
-        color: white;
-        padding: 15px 20px;
-        font-weight: 600;
-        font-size: 1.1rem;
-        text-align: left;
-    }
-    
-    .app-module caption a {
-        color: white;
-        text-decoration: none;
-    }
-    
-    .app-module caption a:hover {
-        text-decoration: underline;
-    }
-    
-    .app-module tr {
-        border-bottom: 1px solid var(--unfold-color-gray-100);
-        transition: background-color 0.2s ease;
-    }
-    
-    .app-module tr:hover {
-        background-color: var(--unfold-color-gray-50);
-    }
-    
-    .app-module tr:last-child {
-        border-bottom: none;
-    }
-    
-    .app-module th {
-        padding: 12px 20px;
-        text-align: left;
-        font-weight: 500;
-        color: var(--unfold-color-gray-700);
-        width: 60%;
-    }
-    
-    .app-module th a {
-        color: var(--unfold-color-gray-900);
-        text-decoration: none;
-        font-weight: 500;
-    }
-    
-    .app-module th a:hover {
-        color: var(--unfold-color-primary-600);
-        text-decoration: underline;
-    }
-    
-    .app-module td {
-        padding: 12px 20px;
-        text-align: center;
-        vertical-align: middle;
-        color: var(--unfold-color-gray-700);
-    }
-    
-    /* Restore Django Unfold default button styles */
-    .addlink {
-        background: var(--unfold-color-primary-600);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-    }
-    
-    .addlink:hover {
-        background: var(--unfold-color-primary-700);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .changelink {
-        background: var(--unfold-color-primary-600);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-    }
-    
-    .changelink:hover {
-        background: var(--unfold-color-primary-700);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .viewlink {
-        background: var(--unfold-color-gray-600);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-    }
-    
-    .viewlink:hover {
-        background: var(--unfold-color-gray-700);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .no-permission {
-        text-align: center;
-        padding: 40px 20px;
-        color: #6b7280;
-        font-style: italic;
-    }
-    
-    /* Flag-based Language Selector */
-    .flag-language-selector {
-        position: fixed;
-        top: 15px;
-        right: 120px; /* Move further left to avoid user button */
-        z-index: 999; /* Lower z-index than user button */
-        display: flex;
-        gap: 8px;
-        background: white;
-        border-radius: 8px;
-        padding: 6px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border: 1px solid #e5e7eb;
-    }
-    
-    /* RTL layout - move to left side for Persian */
-    .rtl-layout .flag-language-selector {
-        right: auto;
-        left: 20px;
-    }
-    
-    /* Ensure user dropdown doesn't overflow in RTL */
-    .rtl-layout .unfold-user-menu {
-        left: auto !important;
-        right: 0 !important;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-    
-    .flag-option {
-        width: 32px;
-        height: 24px;
-        border-radius: 4px;
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: all 0.2s ease;
-        position: relative;
-        overflow: hidden;
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
-    
-    .flag-option:hover {
-        transform: scale(1.1);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    
-    .flag-option.active {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
-    
-    .flag-option img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 2px;
-    }
+/* RTL Layout Support */
+.rtl-layout {
+    direction: rtl;
+    text-align: right;
+}
+.rtl-layout .dashboard-section,
+.rtl-layout .app-management {
+    text-align: right;
+}
+.rtl-layout .stat-card {
+    text-align: center;
+}
+.rtl-layout .category-item {
+    flex-direction: row-reverse;
+}
+.rtl-layout .app-module th {
+    text-align: right;
+}
+.rtl-layout .app-module td {
+    text-align: center;
+}
+.dashboard-section {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    height: 400px;
+    position: relative;
+}
+.chart-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #374151;
+}
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+.category-card {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.category-item:last-child {
+    border-bottom: none;
+}
+.category-name {
+    font-weight: 500;
+}
+.category-amount {
+    font-weight: bold;
+    color: #059669;
+}
+.expense-amount {
+    color: #dc2626;
+}
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 10px;
+}
+.section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #374151;
+    margin: 0;
+}
+.dashboard-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.month-navigation {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.statistics-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+.statistics-link:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    color: white;
+    text-decoration: none;
+}
+.nav-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid #d1d5db;
+}
+.nav-btn.prev-month {
+    background: #f3f4f6;
+    color: #374151;
+}
+.nav-btn.prev-month:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+.nav-btn.current-month {
+    background: var(--unfold-color-primary-600);
+    color: white;
+    border-color: var(--unfold-color-primary-600);
+}
+.nav-btn.current-month:hover {
+    background: var(--unfold-color-primary-700);
+    color: white;
+}
+.nav-btn.next-month {
+    background: #f3f4f6;
+    color: #374151;
+}
+.nav-btn.next-month:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+/* Restore Django Unfold default app management styling */
+.app-management {
+    margin-top: 30px;
+}
+.app-module {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid var(--unfold-color-gray-200);
+}
+/* Restore Django Unfold default table styles */
+.app-module table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.app-module caption {
+    background: var(--unfold-color-primary-600);
+    color: white;
+    padding: 15px 20px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-align: left;
+}
+.app-module caption a {
+    color: white;
+    text-decoration: none;
+}
+.app-module caption a:hover {
+    text-decoration: underline;
+}
+.app-module tr {
+    border-bottom: 1px solid var(--unfold-color-gray-100);
+    transition: background-color 0.2s ease;
+}
+.app-module tr:hover {
+    background-color: var(--unfold-color-gray-50);
+}
+.app-module tr:last-child {
+    border-bottom: none;
+}
+.app-module th {
+    padding: 12px 20px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--unfold-color-gray-700);
+    width: 60%;
+}
+.app-module th a {
+    color: var(--unfold-color-gray-900);
+    text-decoration: none;
+    font-weight: 500;
+}
+.app-module th a:hover {
+    color: var(--unfold-color-primary-600);
+    text-decoration: underline;
+}
+.app-module td {
+    padding: 12px 20px;
+    text-align: center;
+    vertical-align: middle;
+    color: var(--unfold-color-gray-700);
+}
+/* Restore Django Unfold default button styles */
+.addlink {
+    background: var(--unfold-color-primary-600);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+.addlink:hover {
+    background: var(--unfold-color-primary-700);
+    color: white;
+    text-decoration: none;
+}
+.changelink {
+    background: var(--unfold-color-primary-600);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+.changelink:hover {
+    background: var(--unfold-color-primary-700);
+    color: white;
+    text-decoration: none;
+}
+.viewlink {
+    background: var(--unfold-color-gray-600);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+.viewlink:hover {
+    background: var(--unfold-color-gray-700);
+    color: white;
+    text-decoration: none;
+}
+.no-permission {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+    font-style: italic;
+}
+/* Flag-based Language Selector */
+.flag-language-selector {
+    position: fixed;
+    top: 15px;
+    right: 120px;
+    z-index: 999;
+    display: flex;
+    gap: 8px;
+    background: white;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+/* RTL layout - move to left side for Persian */
+.rtl-layout .flag-language-selector {
+    right: auto;
+    left: 20px;
+}
+/* Ensure user dropdown doesn't overflow in RTL */
+.rtl-layout .unfold-user-menu {
+    left: auto !important;
+    right: 0 !important;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.flag-option {
+    width: 32px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.flag-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.flag-option.active {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+.flag-option img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+}
+/* Enhanced Workspace Selector */
+.workspace-selector {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: linear-gradient(90deg, rgba(99,102,241,0.06), rgba(16,185,129,0.03));
+    padding:10px 14px;
+    border-radius:10px;
+    border:1px solid rgba(99,102,241,0.12);
+    max-width:420px;
+    box-shadow:0 6px 18px rgba(15,23,42,0.06);
+    margin-bottom: 20px;
+}
+.workspace-avatar {
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#6366f1,#10b981);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:0.95rem;
+    flex-shrink:0;
+    text-transform:uppercase;
+}
+.workspace-info { display:flex; flex-direction:column; min-width:0; }
+.workspace-name {
+    font-weight:700;
+    color:#0f172a;
+    font-size:0.95rem;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:220px;
+}
+.workspace-meta { font-size:0.78rem; color:#6b7280; margin-top:2px; }
+.workspace-dropdown {
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid rgba(15,23,42,0.06);
+    background:#fff;
+    font-weight:600;
+    cursor:pointer;
+}
+.workspace-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.workspace-btn {
+    padding:8px 10px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    font-weight:600;
+    color:#fff;
+    background:linear-gradient(90deg,#4f46e5,#06b6d4);
+    box-shadow:0 6px 12px rgba(99,102,241,0.12);
+}
+@media (max-width:720px){
+    .workspace-selector{max-width:100%; padding:8px}
+    .workspace-name{max-width:140px}
+    .workspace-actions{display:none}
+}
 </style>
 {% endblock %}
 
@@ -432,6 +436,37 @@
         <img src="{% static 'flags/iran.jpeg' %}" alt="فارسی" title="فارسی" />
     </div>
 </div>
+
+{% if workspaces %}
+<div class="workspace-selector" role="region" aria-label="{% translate 'Workspace selector' %}">
+  <form method="POST" action="{% url 'admin:switch_workspace' %}" id="workspace-form">
+    {% csrf_token %}
+    <div class="workspace-avatar" id="ws-avatar" title="{% translate 'Workspace' %}">
+      {% if current_workspace %}
+        {{ current_workspace.name|slice:":2"|upper }}
+      {% else %}
+        {{ workspaces.0.name|slice:":2"|upper }}
+      {% endif %}
+    </div>
+    <div class="workspace-info">
+      <label for="workspace_id" class="workspace-name">
+        {% if current_workspace %}{{ current_workspace.name }}{% else %}{{ workspaces.0.name }}{% endif %}
+      </label>
+      <div class="workspace-meta">
+        {% translate "Workspace" %} • {{ workspaces|length }} {% translate "available" %}
+      </div>
+    </div>
+    <select name="workspace_id" id="workspace_id" class="workspace-dropdown" onchange="document.getElementById('workspace-form').submit()">
+      {% for ws in workspaces %}
+        <option value="{{ ws.id }}" {% if current_workspace and ws.id == current_workspace.id %}selected{% endif %}>{{ ws.name }}</option>
+      {% endfor %}
+    </select>
+    {% comment %} <div class="workspace-actions">
+      <button type="submit" class="workspace-btn" title="{% translate 'Switch Workspace' %}">{% translate 'Switch' %}</button>
+    </div> {% endcomment %}
+  </form>
+</div>
+{% endif %}
 
 <div id="content-main">
     <!-- Financial Dashboard Section -->
@@ -743,11 +778,23 @@ function switchLanguage(lang) {
     document.querySelectorAll('.flag-option').forEach(function(flag) {
         flag.classList.remove('active');
     });
-    document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+    document.querySelector(`[data-lang=\"${lang}\"]`).classList.add('active');
     
     // Redirect to switch language
     window.location.href = '{% url "admin:switch_language" %}?lang=' + lang;
 }
+
+// Optional: update avatar initials on workspace change
+document.addEventListener('DOMContentLoaded', function(){
+  const select = document.getElementById('workspace_id');
+  const avatar = document.getElementById('ws-avatar');
+  if(select && avatar){
+    select.addEventListener('change', function(){
+      const text = select.options[select.selectedIndex].text.trim();
+      avatar.textContent = text.slice(0,2).toUpperCase();
+    });
+  }
+});
 </script>
 </div>
-{% endblock %} 
+{% endblock %}
