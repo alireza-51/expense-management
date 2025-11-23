@@ -1,8 +1,13 @@
 from django.conf import settings
 from .models import Workspace
-from django.http import HttpResponse
+
 
 class WorkspaceMiddleware:
+    """
+    Middleware to handle workspace selection and management.
+    Requires user to be authenticated (via session or JWT).
+    Should be placed after JWTAuthenticationMiddleware.
+    """
     def __init__(self, get_response):
         self.get_response = get_response
 
