@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from base.models import BaseModel
 from categories.models import Category
@@ -20,8 +21,9 @@ class Transaction(BaseModel):
     )
     amount = models.DecimalField(
         _('Amount'),
-        max_digits=10,
-        decimal_places=2
+        max_digits=20,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
     )
     transacted_at = models.DateTimeField(_('Transaction Date'))
     notes = models.TextField(_('Notes'), blank=True)
