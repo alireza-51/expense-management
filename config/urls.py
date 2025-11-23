@@ -27,16 +27,19 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 # admin.site.get_urls = config.admin.custom_get_urls
 
 urlpatterns = [
-    # path('', admin.site.urls),
+    # API routes first (before admin to avoid conflicts)
     path('api/', include('categories.urls')),
     path('api/', include('expenses.urls')),
     path('api/', include('workspaces.urls')),
     path('api/', include('users.urls')),
+    path('api/', include('analytics.urls')),
     
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
+    
+    # Admin at the end
+    path('admin/', admin.site.urls),
 ]
 
 # Serve media files in development
