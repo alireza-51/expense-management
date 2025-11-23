@@ -18,18 +18,25 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import RedirectView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 # Import our custom admin configuration
-import config.admin
+# import config.admin
 
 # Override admin URLs to include custom views
-admin.site.get_urls = config.admin.custom_get_urls
+# admin.site.get_urls = config.admin.custom_get_urls
 
 urlpatterns = [
-    path('', admin.site.urls),
-    # path('categories/', include('categories.urls')),
-    # path('expenses/', include('expenses.urls')),
+    # path('', admin.site.urls),
+    path('api/', include('categories.urls')),
+    path('api/', include('expenses.urls')),
+    path('api/', include('workspaces.urls')),
+    path('api/', include('users.urls')),
+    
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
 ]
 
 # Serve media files in development
