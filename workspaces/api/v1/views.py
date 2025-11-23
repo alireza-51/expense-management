@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django.utils import timezone
+from django.conf import settings
 
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -18,6 +19,9 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrMember]
 
     def get_queryset(self):
+        # Handle schema generation for drf-spectacular
+        if getattr(self, 'swagger_fake_view', False):
+            return Workspace.objects.none()
         return Workspace.objects.filter(
             members=self.request.user
         ).distinct()
@@ -59,6 +63,9 @@ class WorkspaceInvitationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        # Handle schema generation for drf-spectacular
+        if getattr(self, 'swagger_fake_view', False):
+            return WorkspaceInvitation.objects.none()
         # show invitations sent to the user or sent by the user
         return WorkspaceInvitation.objects.filter(
             Q(invited_user=self.request.user) | Q(invited_by=self.request.user)
