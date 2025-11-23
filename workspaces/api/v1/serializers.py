@@ -3,6 +3,7 @@ from utils.typing import MemberData
 from rest_framework import serializers
 from workspaces.models import Workspace, WorkspaceInvitation
 from django.contrib.auth import get_user_model
+from drf_spectacular.utils import extend_schema_field
 
 User = get_user_model()
 
@@ -30,7 +31,7 @@ class WorkspaceInvitationSerializer(serializers.ModelSerializer):
     invited_user_username = serializers.ReadOnlyField(source='invited_user.username')
     invited_by_username = serializers.ReadOnlyField(source='invited_by.username')
     workspace_name = serializers.ReadOnlyField(source='workspace.name')
-    is_accepted = serializers.ReadOnlyField()  # dynamic property
+    is_accepted = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkspaceInvitation
@@ -47,3 +48,8 @@ class WorkspaceInvitationSerializer(serializers.ModelSerializer):
             'is_accepted',
         ]
         read_only_fields = ['invited_by', 'accepted_at', 'is_accepted']
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_accepted(self, obj) -> bool:
+        """Return whether the invitation has been accepted."""
+        return obj.is_accepted

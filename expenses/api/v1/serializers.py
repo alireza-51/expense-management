@@ -1,6 +1,8 @@
+from typing import Optional
 from rest_framework import serializers
 from expenses.models import Income, Expense
 from jalali_date import datetime2jalali
+from drf_spectacular.utils import extend_schema_field
 
 
 class TransactionSerializer(serializers.ModelSerializer):
@@ -26,9 +28,10 @@ class TransactionSerializer(serializers.ModelSerializer):
             'created_at',
             'edited_at',
         ]
-        read_only_fields = ['id', 'created_at', 'edited_at']
+        read_only_fields = ['id', 'created_at', 'edited_at', 'transactioned_at_jalali']
 
-    def get_transactioned_at_jalali(self, instance):
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_transactioned_at_jalali(self, instance) -> Optional[str]:
         if not instance.transacted_at:
             return None
         # Convert Gregorian to Jalali and format nicely
