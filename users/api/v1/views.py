@@ -1,4 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -28,6 +30,7 @@ def get_tokens_for_user(user):
 
 
 @extend_schema(tags=["auth"])
+@method_decorator(csrf_exempt, name='dispatch')
 class SignupView(APIView):
     """Register a new user and return JWT tokens."""
     permission_classes = [AllowAny]
@@ -53,6 +56,7 @@ class SignupView(APIView):
 
 
 @extend_schema(tags=["auth"])
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     """Authenticate user and return JWT tokens."""
     permission_classes = [AllowAny]
@@ -67,6 +71,15 @@ class LoginView(APIView):
             401: OpenApiResponse(description="Invalid credentials"),
         },
     )
+    def get(self, request):
+        """Return API documentation link for GET requests."""
+        return Response({
+            "detail": "This endpoint requires a POST request with username and password.",
+            "swagger_ui": "/api/schema/swagger-ui/",
+            "method": "POST",
+            "endpoint": "/api/v1/auth/login/",
+        }, status=status.HTTP_200_OK)
+    
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -88,6 +101,7 @@ class LoginView(APIView):
 
 
 @extend_schema(tags=["auth"])
+@method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(APIView):
     """Blacklist refresh token to logout."""
     permission_classes = [IsAuthenticated]
