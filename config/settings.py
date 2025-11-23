@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "expenses",
     "workspaces",
     "users",
+    'analytics',
 ]
 
 # -----------------------------
@@ -75,11 +76,12 @@ MIDDLEWARE = [
     "django.middleware.locale.LocaleMiddleware",  # after SessionMiddleware
     "config.middleware.LanguageMiddleware",      # custom language middleware
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "config.middleware.CSRFExemptAPIMiddleware",  # Custom CSRF middleware (exempts API routes)
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # session-based auth
+    "config.middleware.JWTAuthenticationMiddleware",  # JWT authentication (after session auth)
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "workspaces.middlewares.WorkspaceMiddleware",  # your custom middleware
+    "workspaces.middlewares.WorkspaceMiddleware",  # workspace selection (requires auth)
 ]
 
 # -----------------------------
