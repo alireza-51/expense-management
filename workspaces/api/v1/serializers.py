@@ -21,7 +21,9 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         return [{"id": u.id, "username": u.username} for u in obj.members.all()]
 
     def create(self, validated_data):
-        workspace = Workspace.objects.create(owner=self.context['request'].user, **validated_data)
+        data = {**validated_data}
+        data.update({'owner':self.context['request'].user})
+        workspace = Workspace.objects.create(**data)
         # Make sure owner is always a member
         workspace.members.add(self.context['request'].user)
         return workspace

@@ -19,15 +19,26 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrMember]
 
     def get_queryset(self):
-        # Handle schema generation for drf-spectacular
-        if getattr(self, 'swagger_fake_view', False):
-            return Workspace.objects.none()
         return Workspace.objects.filter(
             members=self.request.user
         ).distinct()
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        """
+        Get the current active workspace for the authenticated user.
+        """
+        workspace = getattr(request, 'workspace', None)
+        if not workspace:
+            return Response(
+                {"detail": "No workspace selected."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = self.get_serializer(workspace)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def switch(self, request, pk=None):
@@ -46,6 +57,7 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
                 samesite="Lax",
                 secure=False
             )
+            print("DEBUG: set cookie debug mode", workspace.id)
         else:
             response.set_cookie(
                 "workspace",
@@ -54,6 +66,7 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
                 samesite="None",
                 secure=True
             )
+            print("DEBUG: set cookie", workspace.id)
         return response
 
 
@@ -63,9 +76,6 @@ class WorkspaceInvitationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Handle schema generation for drf-spectacular
-        if getattr(self, 'swagger_fake_view', False):
-            return WorkspaceInvitation.objects.none()
         # show invitations sent to the user or sent by the user
         return WorkspaceInvitation.objects.filter(
             Q(invited_user=self.request.user) | Q(invited_by=self.request.user)

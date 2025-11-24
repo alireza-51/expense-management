@@ -34,7 +34,11 @@ class WorkspaceMiddleware:
         response = self.get_response(request)
 
         # 🔹 Sync cookie only if authenticated and workspace set
-        if request.user.is_authenticated and request.workspace:
+        # Check if cookie was already set by a view (e.g., switch action)
+        # to avoid overriding view-specific cookie settings
+        cookie_already_set = 'workspace' in response.cookies
+        
+        if request.user.is_authenticated and request.workspace and not cookie_already_set:
             # Environment-aware cookie settings
             if settings.DEBUG:
                 # Development: relaxed for local frontend use

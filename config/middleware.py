@@ -56,8 +56,11 @@ class JWTAuthenticationMiddleware:
             return None
 
     def __call__(self, request):
-        # Only authenticate if user is not already authenticated (session-based auth takes precedence)
-        if not request.user.is_authenticated:
+        # Only process JWT authentication for API routes
+        # For non-API routes, skip JWT authentication entirely (use session only)
+        if request.path.startswith('/api/'):
+            # For API routes, JWT token takes precedence over session authentication
+            # This allows API clients to authenticate as different users even if session exists
             jwt_user = self._authenticate_jwt(request)
             if jwt_user:
                 request.user = jwt_user
