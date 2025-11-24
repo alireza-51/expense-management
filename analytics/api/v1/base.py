@@ -7,7 +7,7 @@ from base.utils import get_month_range
 from drf_spectacular.utils import OpenApiParameter
 import jdatetime
 from datetime import datetime
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 
 
 def get_calendar_parameters(description: str = "Calendar filtering parameters"):
@@ -186,4 +186,28 @@ class CalendarFilterMixin:
         if not workspace:
             raise ValueError('No workspace selected.')
         return workspace
+
+
+def get_all_descendants(category) -> List:
+    """
+    Get all descendant categories (children, grandchildren, etc.) including the category itself.
+    
+    Args:
+        category: The Category object to get descendants for
+        
+    Returns:
+        List of Category objects including the category itself and all its descendants
+    """
+    from categories.models import Category
+    
+    descendants = [category]
+    
+    def get_children_recursive(parent):
+        children = Category.objects.filter(parent=parent)
+        for child in children:
+            descendants.append(child)
+            get_children_recursive(child)
+    
+    get_children_recursive(category)
+    return descendants
 
