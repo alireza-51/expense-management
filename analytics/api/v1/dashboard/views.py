@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Sum, Q
+from django.utils import timezone
 from expenses.models import Income, Expense
 from categories.models import Category
 from drf_spectacular.utils import extend_schema
@@ -23,6 +24,30 @@ from analytics.api.v1.base import CalendarFilterMixin, get_calendar_parameters, 
         'difference': {
             'type': 'number',
             'description': 'Difference between income and expense (income - expense)'
+        },
+        'savings_rate': {
+            'type': 'number',
+            'description': 'Savings rate as percentage: (Income - Expenses) / Income * 100'
+        },
+        'expense_to_income_ratio': {
+            'type': 'number',
+            'description': 'Expense-to-income ratio: Expenses / Income'
+        },
+        'average_daily_spending': {
+            'type': 'number',
+            'description': 'Average daily spending: Total expenses / days in month'
+        },
+        'projected_month_end_balance': {
+            'type': 'number',
+            'description': 'Projected month-end balance based on current spending rate'
+        },
+        'days_elapsed': {
+            'type': 'integer',
+            'description': 'Number of days elapsed in the current month'
+        },
+        'days_in_month': {
+            'type': 'integer',
+            'description': 'Total number of days in the month'
         }
     })}
 )
@@ -57,8 +82,8 @@ class DashboardOverviewView(APIView, CalendarFilterMixin):
             # Get month information
             month_info = self.get_month_info(start_date, calendar_type)
             
-            # Calculate aggregates
-            data = self._calculate_aggregates(workspace, start_datetime, end_datetime)
+            # Calculate aggregates and financial health metrics
+            data = self._calculate_aggregates(workspace, start_datetime, end_datetime, start_date, end_date)
             
             # Build response
             response_data = {
@@ -83,9 +108,9 @@ class DashboardOverviewView(APIView, CalendarFilterMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    def _calculate_aggregates(self, workspace, start_datetime, end_datetime):
+    def _calculate_aggregates(self, workspace, start_datetime, end_datetime, start_date, end_date):
         """
-        Calculate monthly aggregates for income and expense.
+        Calculate monthly aggregates for income and expense, plus financial health metrics.
         """
         # Filter by workspace and date range
         base_filter = Q(
@@ -93,7 +118,7 @@ class DashboardOverviewView(APIView, CalendarFilterMixin):
             transacted_at__gte=start_datetime,
             transacted_at__lte=end_datetime
         )
-        print(workspace)
+        
         # Aggregate income
         total_income = Income.objects.filter(base_filter, category__type=Category.CategoryType.INCOME).aggregate(
             total=Sum('amount')
@@ -107,10 +132,58 @@ class DashboardOverviewView(APIView, CalendarFilterMixin):
         # Calculate difference
         difference = total_income - total_expense
         
+        # Calculate days in month
+        days_in_month = (end_date - start_date).days + 1
+        
+        # Calculate days elapsed (current date relative to month range)
+        today = timezone.now().date()
+        if today < start_date:
+            # If today is before the month start, no days elapsed
+            days_elapsed = 0
+        elif today > end_date:
+            # If today is after the month end, all days elapsed
+            days_elapsed = days_in_month
+        else:
+            # Days elapsed from start of month to today (inclusive)
+            days_elapsed = (today - start_date).days + 1
+        
+        # Calculate financial health metrics
+        # Savings rate: (Income - Expenses) / Income * 100
+        savings_rate = ((total_income - total_expense) / total_income * 100) if total_income > 0 else 0
+        
+        # Expense-to-income ratio: Expenses / Income
+        expense_to_income_ratio = (total_expense / total_income) if total_income > 0 else 0
+        
+        # Average daily spending: Total expenses / days in month
+        average_daily_spending = total_expense / days_in_month if days_in_month > 0 else 0
+        
+        # Projected month-end balance: Based on current spending rate
+        # If the month has already ended, use actual balance (no projection needed)
+        if today > end_date:
+            # Month is in the past, use actual balance
+            projected_month_end_balance = difference
+        elif days_elapsed > 0 and total_expense > 0:
+            # Month is in progress, project based on current spending rate
+            average_daily_spending_so_far = total_expense / days_elapsed
+            remaining_days = days_in_month - days_elapsed
+            projected_remaining_expenses = average_daily_spending_so_far * remaining_days
+            projected_total_expenses = total_expense + projected_remaining_expenses
+            projected_month_end_balance = total_income - projected_total_expenses
+        else:
+            # No expenses yet or month hasn't started, project based on average daily spending
+            projected_total_expenses = average_daily_spending * days_in_month
+            projected_month_end_balance = total_income - projected_total_expenses
+        
         return {
             'total_income': float(total_income),
             'total_expense': float(total_expense),
             'difference': float(difference),
+            'savings_rate': round(float(savings_rate), 2),
+            'expense_to_income_ratio': round(float(expense_to_income_ratio), 4),
+            'average_daily_spending': round(float(average_daily_spending), 2),
+            'projected_month_end_balance': round(float(projected_month_end_balance), 2),
+            'days_elapsed': days_elapsed,
+            'days_in_month': days_in_month,
         }
 
 
@@ -366,4 +439,5 @@ class ExpenseDistributionView(APIView, CalendarFilterMixin):
         pie_data.sort(key=lambda x: x['amount'], reverse=True)
         
         return pie_data
+
 

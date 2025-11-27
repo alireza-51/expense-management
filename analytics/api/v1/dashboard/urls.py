@@ -7,3 +7,4 @@ urlpatterns = [
     path('expense-distribution/', ExpenseDistributionView.as_view(), name='expense-distribution'),
 ]
 
+
