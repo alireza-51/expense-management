@@ -3,6 +3,7 @@ Base utilities and mixins for calendar-based analytics views.
 Provides reusable functionality for Jalali/Gregorian calendar filtering.
 """
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from base.utils import get_month_range
 from drf_spectacular.utils import OpenApiParameter
 import jdatetime
@@ -36,6 +37,15 @@ def get_calendar_parameters(description: str = "Calendar filtering parameters"):
             location=OpenApiParameter.QUERY,
             description='Month in format YYYY-MM (e.g., 1403-07 for Jalali or 2024-10 for Gregorian). Defaults to current month.',
             required=False
+        ),
+        OpenApiParameter(
+            name='lang',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Language code: "en" for English or "fa" for Persian/Farsi. Can also be sent via Accept-Language header.',
+            required=False,
+            enum=['en', 'fa'],
+            default='en'
         ),
     ]
 
@@ -108,8 +118,27 @@ class CalendarFilterMixin:
         """
         calendar_type = request.query_params.get('calendar', 'gregorian').lower()
         if calendar_type not in ['jalali', 'gregorian']:
-            raise ValueError('Invalid calendar type. Use "jalali" or "gregorian".')
+            raise ValueError(_('Invalid calendar type. Use "jalali" or "gregorian".'))
         return calendar_type
+    
+    def get_language(self, request) -> str:
+        """
+        Extract and validate language from request.
+        Language can be set via query parameter 'lang' or Accept-Language header.
+        
+        Returns:
+            str: Language code ('en' or 'fa')
+        """
+        # Check query parameter first
+        language = request.query_params.get('lang') or request.query_params.get('language')
+        if language:
+            language = language.lower()
+            if language in ['en', 'fa']:
+                return language
+        
+        # Fall back to request language (set by middleware)
+        from django.utils.translation import get_language
+        return get_language() or 'en'
     
     def get_month_param(self, request) -> Optional[str]:
         """
@@ -147,24 +176,51 @@ class CalendarFilterMixin:
         
         return start_datetime, end_datetime
     
-    def get_month_info(self, start_date, calendar_type: str) -> Dict[str, str]:
+    def get_month_info(self, start_date, calendar_type: str, request=None) -> Dict[str, str]:
         """
         Get formatted month information for response.
         
         Args:
             start_date: datetime.date object
             calendar_type: 'jalali' or 'gregorian'
+            request: Optional request object to get language preference
             
         Returns:
             Dict with 'month' (YYYY-MM), 'month_name' (formatted name), and 'calendar_type'
         """
+        # Get current language
+        from django.utils.translation import get_language
+        current_language = get_language() or 'en'
+        
         if calendar_type == 'jalali':
             jalali_date = jdatetime.date.fromgregorian(date=start_date)
             month_display = jalali_date.strftime('%Y-%m')
-            month_name = jalali_date.strftime('%B %Y')
+            
+            # Jalali month names in Persian
+            jalali_months_fa = [
+                'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+                'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+            ]
+            
+            # Jalali month names in English (translatable)
+            jalali_months_en = [
+                _('Farvardin'), _('Ordibehesht'), _('Khordad'), _('Tir'), 
+                _('Mordad'), _('Shahrivar'), _('Mehr'), _('Aban'), 
+                _('Azar'), _('Dey'), _('Bahman'), _('Esfand')
+            ]
+            
+            month_index = jalali_date.month - 1
+            if current_language == 'fa':
+                month_name = f"{jalali_months_fa[month_index]} {jalali_date.year}"
+            else:
+                month_name = f"{jalali_months_en[month_index]} {jalali_date.year}"
         else:
             month_display = start_date.strftime('%Y-%m')
-            month_name = start_date.strftime('%B %Y')
+            # Gregorian months - use strftime which respects locale
+            month_name_en = start_date.strftime('%B %Y')
+            # For Gregorian, we can use translation if needed
+            # For now, use the English format (can be extended with locale)
+            month_name = month_name_en
         
         return {
             'month': month_display,
@@ -184,7 +240,7 @@ class CalendarFilterMixin:
         """
         workspace = getattr(request, 'workspace', None)
         if not workspace:
-            raise ValueError('No workspace selected.')
+            raise ValueError(_('No workspace selected.'))
         return workspace
 
 
