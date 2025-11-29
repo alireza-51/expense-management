@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Sum, Q, Count
+from django.utils.translation import gettext_lazy as _
 from expenses.models import Expense
 from categories.models import Category
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -95,7 +96,7 @@ class DailySpendingHeatmapView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -270,7 +271,7 @@ class WeeklyBreakdownView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -292,7 +293,10 @@ class WeeklyBreakdownView(APIView, CalendarFilterMixin):
         
         # Day names mapping (PostgreSQL: 0=Sunday, 1=Monday, ..., 6=Saturday)
         # Convert to standard: 0=Monday, 6=Sunday
-        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        day_names = [
+            _('Monday'), _('Tuesday'), _('Wednesday'), _('Thursday'),
+            _('Friday'), _('Saturday'), _('Sunday')
+        ]
         
         weekly_data = []
         day_totals = {}
@@ -430,7 +434,7 @@ class TimeBasedAnalysisView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -495,4 +499,5 @@ class TimeBasedAnalysisView(APIView, CalendarFilterMixin):
         }
         
         return time_breakdown, summary
+
 

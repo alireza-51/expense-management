@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Sum, Q, Count, Avg
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from expenses.models import Income, Expense
 from categories.models import Category
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -123,7 +124,7 @@ class QuickStatsView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -378,7 +379,7 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -392,7 +393,7 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
             recommendations.append({
                 'priority': 1,
                 'type': 'month_over_month',
-                'title': 'Month-over-Month Comparison',
+                'title': _('Month-over-Month Comparison'),
                 'message': mom_data['message'],
                 'data': mom_data,
                 'action_url': '/api/v1/analytics/trends/month-over-month/'
@@ -404,7 +405,7 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
             recommendations.append({
                 'priority': 2,
                 'type': 'budget_vs_actual',
-                'title': 'Budget Status',
+                'title': _('Budget Status'),
                 'message': budget_data['message'],
                 'data': budget_data,
                 'action_url': '/api/v1/analytics/budget-management/budget-vs-actual/'
@@ -416,7 +417,7 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
             recommendations.append({
                 'priority': 3,
                 'type': 'top_expenses',
-                'title': 'Top Expenses',
+                'title': _('Top Expenses'),
                 'message': top_expenses_data['message'],
                 'data': top_expenses_data,
                 'action_url': '/api/v1/analytics/insights/spending/'
@@ -428,7 +429,7 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
             recommendations.append({
                 'priority': 4,
                 'type': 'savings_rate',
-                'title': 'Savings Rate',
+                'title': _('Savings Rate'),
                 'message': savings_rate_data['message'],
                 'data': savings_rate_data,
                 'action_url': '/api/v1/dashboard/overview/'
@@ -440,7 +441,7 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
             recommendations.append({
                 'priority': 5,
                 'type': 'category_trends',
-                'title': 'Category Trends',
+                'title': _('Category Trends'),
                 'message': category_trends_data['message'],
                 'data': category_trends_data,
                 'action_url': '/api/v1/analytics/category-analysis/trends/'
@@ -499,15 +500,19 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
         if abs(income_change) >= 10 or abs(expense_change) >= 10:
             message_parts = []
             if abs(income_change) >= 10:
-                direction = "increased" if income_change > 0 else "decreased"
-                message_parts.append(f"Income {direction} by {abs(income_change):.0f}%")
+                direction = _("increased") if income_change > 0 else _("decreased")
+                message_parts.append(_("Income {direction} by {percentage}%").format(
+                    direction=direction, percentage=f"{abs(income_change):.0f}"
+                ))
             if abs(expense_change) >= 10:
-                direction = "increased" if expense_change > 0 else "decreased"
-                message_parts.append(f"Expenses {direction} by {abs(expense_change):.0f}%")
+                direction = _("increased") if expense_change > 0 else _("decreased")
+                message_parts.append(_("Expenses {direction} by {percentage}%").format(
+                    direction=direction, percentage=f"{abs(expense_change):.0f}"
+                ))
             
-            message = " vs last month: " + ", ".join(message_parts)
+            message = _(" vs last month: {changes}").format(changes=", ".join(message_parts))
         else:
-            message = "Financial activity is stable compared to last month"
+            message = _("Financial activity is stable compared to last month")
         
         return {
             'current_income': round(float(current_income), 2),
@@ -552,11 +557,15 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
                 'category_name': expense.category.name,
                 'category_color': expense.category.color,
                 'date': expense.transacted_at.date().isoformat(),
-                'description': expense.description or ''
+                'notes': expense.notes or ''
             })
             total_top_expenses += float(expense.amount)
         
-        message = f"Top 5 expenses total {total_top_expenses:,.2f}. Largest: {expenses_list[0]['category_name']} ({expenses_list[0]['amount']:,.2f})"
+        message = _("Top 5 expenses total {total}. Largest: {category} ({amount})").format(
+            total=f"{total_top_expenses:,.2f}",
+            category=expenses_list[0]['category_name'],
+            amount=f"{expenses_list[0]['amount']:,.2f}"
+        )
         
         return {
             'expenses': expenses_list,
@@ -589,13 +598,25 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
         
         # Generate message based on savings rate
         if savings_rate >= 20:
-            message = f"Excellent savings rate of {savings_rate:.1f}%! You're saving {savings:,.2f} this month."
+            message = _("Excellent savings rate of {rate}%! You're saving {amount} this month.").format(
+                rate=f"{savings_rate:.1f}",
+                amount=f"{savings:,.2f}"
+            )
         elif savings_rate >= 10:
-            message = f"Good savings rate of {savings_rate:.1f}%. You're saving {savings:,.2f} this month."
+            message = _("Good savings rate of {rate}%. You're saving {amount} this month.").format(
+                rate=f"{savings_rate:.1f}",
+                amount=f"{savings:,.2f}"
+            )
         elif savings_rate > 0:
-            message = f"Savings rate of {savings_rate:.1f}%. You're saving {savings:,.2f} this month."
+            message = _("Savings rate of {rate}%. You're saving {amount} this month.").format(
+                rate=f"{savings_rate:.1f}",
+                amount=f"{savings:,.2f}"
+            )
         else:
-            message = f"Negative savings rate of {savings_rate:.1f}%. Expenses exceed income by {abs(savings):,.2f}."
+            message = _("Negative savings rate of {rate}%. Expenses exceed income by {amount}.").format(
+                rate=f"{savings_rate:.1f}",
+                amount=f"{abs(savings):,.2f}"
+            )
         
         return {
             'savings_rate': round(savings_rate, 2),
@@ -664,19 +685,26 @@ class PriorityRecommendationsView(APIView, CalendarFilterMixin):
         message_parts = []
         if growing_categories:
             top_growing = max(growing_categories, key=lambda x: x['change_percentage'])
-            message_parts.append(f"{top_growing['category_name']} growing by {top_growing['change_percentage']:.0f}%")
+            message_parts.append(_("{category} growing by {percentage}%").format(
+                category=top_growing['category_name'],
+                percentage=f"{top_growing['change_percentage']:.0f}"
+            ))
         if shrinking_categories:
             top_shrinking = min(shrinking_categories, key=lambda x: x['change_percentage'])
-            message_parts.append(f"{top_shrinking['category_name']} shrinking by {abs(top_shrinking['change_percentage']):.0f}%")
+            message_parts.append(_("{category} shrinking by {percentage}%").format(
+                category=top_shrinking['category_name'],
+                percentage=f"{abs(top_shrinking['change_percentage']):.0f}"
+            ))
         
         if not message_parts:
-            message = "Category spending is relatively stable"
+            message = _("Category spending is relatively stable")
         else:
-            message = "Category trends: " + ", ".join(message_parts)
+            message = _("Category trends: {trends}").format(trends=", ".join(message_parts))
         
         return {
             'growing_categories': growing_categories,
             'shrinking_categories': shrinking_categories,
             'message': message
         }
+
 

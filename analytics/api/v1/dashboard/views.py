@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Sum, Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from expenses.models import Income, Expense
 from categories.models import Category
 from drf_spectacular.utils import extend_schema
@@ -39,7 +40,7 @@ from analytics.api.v1.base import CalendarFilterMixin, get_calendar_parameters, 
         },
         'projected_month_end_balance': {
             'type': 'number',
-            'description': 'Projected month-end balance based on current spending rate'
+            'description': 'Projected month-end difference (income - expenses) based on current spending rate. This is NOT a cumulative balance, but the projected difference for this month only.'
         },
         'days_elapsed': {
             'type': 'integer',
@@ -104,7 +105,7 @@ class DashboardOverviewView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -157,22 +158,41 @@ class DashboardOverviewView(APIView, CalendarFilterMixin):
         # Average daily spending: Total expenses / days in month
         average_daily_spending = total_expense / days_in_month if days_in_month > 0 else 0
         
-        # Projected month-end balance: Based on current spending rate
-        # If the month has already ended, use actual balance (no projection needed)
+        # Projected month-end difference: Based on current spending rate
+        # This projects what the difference (income - expenses) will be at the end of the month
+        # If the month has already ended, use actual difference (no projection needed)
         if today > end_date:
-            # Month is in the past, use actual balance
+            # Month is in the past, use actual difference
             projected_month_end_balance = difference
-        elif days_elapsed > 0 and total_expense > 0:
+        elif days_elapsed > 0 and days_elapsed < days_in_month and total_expense > 0:
             # Month is in progress, project based on current spending rate
-            average_daily_spending_so_far = total_expense / days_elapsed
-            remaining_days = days_in_month - days_elapsed
-            projected_remaining_expenses = average_daily_spending_so_far * remaining_days
-            projected_total_expenses = total_expense + projected_remaining_expenses
-            projected_month_end_balance = total_income - projected_total_expenses
+            # Only project if we have meaningful data (at least 3 days elapsed for better accuracy)
+            # For very early in the month, projections can be unreliable
+            if days_elapsed >= 3:
+                # Calculate average daily spending so far
+                average_daily_spending_so_far = float(total_expense) / days_elapsed
+                remaining_days = days_in_month - days_elapsed
+                
+                # Project remaining expenses based on current spending rate
+                projected_remaining_expenses = average_daily_spending_so_far * remaining_days
+                projected_total_expenses = float(total_expense) + projected_remaining_expenses
+                
+                # Projected difference = income - projected expenses
+                # Note: We assume income is already complete for the month
+                # If income might still come in, this could be adjusted
+                projected_month_end_balance = float(total_income) - projected_total_expenses
+            else:
+                # Too early in the month for reliable projection, use current difference
+                # Or provide a conservative estimate based on average daily spending
+                if days_in_month > 0:
+                    # Use average daily spending across full month as a conservative estimate
+                    projected_total_expenses = float(total_expense) * (days_in_month / days_elapsed) if days_elapsed > 0 else float(total_expense)
+                    projected_month_end_balance = float(total_income) - projected_total_expenses
+                else:
+                    projected_month_end_balance = difference
         else:
-            # No expenses yet or month hasn't started, project based on average daily spending
-            projected_total_expenses = average_daily_spending * days_in_month
-            projected_month_end_balance = total_income - projected_total_expenses
+            # Month hasn't started yet or no expenses, use current difference
+            projected_month_end_balance = difference
         
         return {
             'total_income': float(total_income),
@@ -261,7 +281,7 @@ class IncomeDistributionView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -388,7 +408,7 @@ class ExpenseDistributionView(APIView, CalendarFilterMixin):
             )
         except Exception as e:
             return Response(
-                {'error': 'An unexpected error occurred.', 'detail': str(e)},
+                {'error': _('An unexpected error occurred.'), 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -439,5 +459,6 @@ class ExpenseDistributionView(APIView, CalendarFilterMixin):
         pie_data.sort(key=lambda x: x['amount'], reverse=True)
         
         return pie_data
+
 
 
