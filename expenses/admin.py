@@ -78,7 +78,7 @@ class TransactionAdmin(AmountFormattingAdminMixin, ModelAdmin):
     
     fieldsets = (
         ('Transaction Details', {
-            'fields': ('amount', 'category', 'notes', 'transacted_at')
+            'fields': ('amount', 'category', 'notes', 'transacted_at', 'workspace')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'edited_at', 'created_by'),
@@ -86,7 +86,7 @@ class TransactionAdmin(AmountFormattingAdminMixin, ModelAdmin):
         }),
     )
 
-    readonly_fields = ['created_at', 'edited_at', 'created_by']
+    readonly_fields = ['created_at', 'edited_at', 'created_by', 'workspace']
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "workspace" and not request.user.is_superuser:
@@ -98,8 +98,8 @@ class TransactionAdmin(AmountFormattingAdminMixin, ModelAdmin):
         return super().get_queryset(request).select_related('category')
     
     def save_model(self, request, obj, form, change):
-        if not obj.workspace and getattr(request, "current_workspace", None):
-            obj.workspace = request.current_workspace
+        if not obj.workspace and getattr(request, "workspace", None):
+            obj.workspace = request.workspace
         obj.created_by = request.user
         super().save_model(request, obj, form, change)
 
@@ -114,9 +114,9 @@ class ExpenseAdmin(TransactionAdmin):
         qs = super().get_queryset(request).select_related('category').filter(
             category__type=Category.CategoryType.EXPENSE
         )
-        if getattr(request, "current_workspace", None):
-            return qs.filter(workspace=request.current_workspace)
-        return qs.none()
+        # if getattr(request, "current_workspace", None):
+        #     return qs.filter(workspace=request.current_workspace)
+        return qs
 
 
 @admin.register(Income)
@@ -127,6 +127,6 @@ class IncomeAdmin(TransactionAdmin):
         qs = super().get_queryset(request).select_related('category').filter(
             category__type=Category.CategoryType.INCOME
         )
-        if getattr(request, "current_workspace", None):
-            return qs.filter(workspace=request.current_workspace)
-        return qs.none()
+        # if getattr(request, "current_workspace", None):
+        #     return qs.filter(workspace=request.current_workspace)
+        return qs
