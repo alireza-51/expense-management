@@ -10,10 +10,36 @@ class LanguageMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Get language from session
-        language = request.session.get(settings.LANGUAGE_COOKIE_NAME)
-        if language and language in [lang[0] for lang in settings.LANGUAGES]:
-            # Activate the language from session
+        language = None
+        valid_languages = [lang[0] for lang in settings.LANGUAGES]
+        
+        # For API requests, check query parameter or header first
+        if request.path.startswith('/api/'):
+            # Check query parameter 'lang' or 'language'
+            language = request.GET.get('lang') or request.GET.get('language')
+            # If not in query params, check Accept-Language header
+            if not language:
+                accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+                if accept_language:
+                    # Parse Accept-Language header (e.g., "fa-IR,fa;q=0.9,en;q=0.8")
+                    # Extract first language code
+                    lang_code = accept_language.split(',')[0].split(';')[0].strip().lower()
+                    # Check if it's a valid language (e.g., 'fa' from 'fa-ir')
+                    if lang_code in valid_languages:
+                        language = lang_code
+                    elif lang_code.startswith('fa'):
+                        language = 'fa'
+                    elif lang_code.startswith('en'):
+                        language = 'en'
+        
+        # Fall back to session if no language found in API params/headers
+        if not language:
+            # Django's default language cookie name is 'django_language'
+            language_cookie_name = getattr(settings, 'LANGUAGE_COOKIE_NAME', 'django_language')
+            language = request.session.get(language_cookie_name)
+        
+        # Activate language if valid
+        if language and language in valid_languages:
             activate(language)
             request.LANGUAGE_CODE = language
         
