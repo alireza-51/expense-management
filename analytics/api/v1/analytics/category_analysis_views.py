@@ -131,19 +131,21 @@ class CategoryComparisonView(APIView, CalendarFilterMixin):
             ).count()
             
             if amount > 0:
+                amount_float = float(amount)
                 categories_data.append({
                     'category_id': main_category.id,
                     'category_name': main_category.name,
                     'category_color': main_category.color,
-                    'amount': float(amount),
+                    'amount': amount_float,
                     'transaction_count': transaction_count,
                     'percentage': 0  # Will be calculated below
                 })
-                total_expenses += amount
+                total_expenses += amount_float
         
         # Calculate percentages
+        total_expenses_float = float(total_expenses) if total_expenses > 0 else 0
         for item in categories_data:
-            item['percentage'] = round((item['amount'] / total_expenses * 100) if total_expenses > 0 else 0, 2)
+            item['percentage'] = round((item['amount'] / total_expenses_float * 100) if total_expenses_float > 0 else 0, 2)
         
         # Sort by amount descending
         categories_data.sort(key=lambda x: x['amount'], reverse=True)
@@ -490,31 +492,37 @@ class CategoryEfficiencyView(APIView, CalendarFilterMixin):
             ).aggregate(total=Sum('amount'))['total'] or 0
             
             if expense_amount > 0:
+                # Convert to float to avoid Decimal/float division issues
+                expense_amount_float = float(expense_amount)
+                total_income_float = float(total_income) if total_income > 0 else 0
+                
                 # Calculate efficiency metrics
-                efficiency_ratio = (expense_amount / total_income) if total_income > 0 else 0
-                percentage_of_income = (expense_amount / total_income * 100) if total_income > 0 else 0
+                efficiency_ratio = (expense_amount_float / total_income_float) if total_income_float > 0 else 0
+                percentage_of_income = (expense_amount_float / total_income_float * 100) if total_income_float > 0 else 0
                 
                 categories_data.append({
                     'category_id': main_category.id,
                     'category_name': main_category.name,
                     'category_color': main_category.color,
-                    'expense_amount': float(expense_amount),
-                    'income_amount': float(total_income),
+                    'expense_amount': expense_amount_float,
+                    'income_amount': total_income_float,
                     'efficiency_ratio': round(efficiency_ratio, 4),
                     'percentage_of_income': round(percentage_of_income, 2)
                 })
                 
-                total_expenses += expense_amount
+                total_expenses += expense_amount_float
         
         # Sort by percentage of income descending
         categories_data.sort(key=lambda x: x['percentage_of_income'], reverse=True)
         
-        # Calculate summary
-        overall_efficiency = (total_expenses / total_income) if total_income > 0 else 0
+        # Calculate summary - convert to float to avoid Decimal/float division issues
+        total_expenses_float = float(total_expenses) if total_expenses > 0 else 0
+        total_income_float = float(total_income) if total_income > 0 else 0
+        overall_efficiency = (total_expenses_float / total_income_float) if total_income_float > 0 else 0
         
         summary = {
-            'total_income': round(float(total_income), 2),
-            'total_expenses': round(float(total_expenses), 2),
+            'total_income': round(total_income_float, 2),
+            'total_expenses': round(total_expenses_float, 2),
             'overall_efficiency': round(overall_efficiency, 4)
         }
         
