@@ -226,16 +226,32 @@ SPECTACULAR_SETTINGS = {
 }
 
 # -----------------------------
-# CORS headers (fixed)
+# CORS headers
 # -----------------------------
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ["http://localhost:8080"]
-CORS_ALLOW_HEADERS = ["content-type", "authorization"]
-CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOW_CREDENTIALS = get_bool_env('DJANGO_CORS_ALLOW_CREDENTIALS', True)
+CORS_ALLOWED_ORIGINS = get_list_env(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    ['http://localhost:8080'],
+    delimiter=','
+)
+CORS_ALLOW_HEADERS = get_list_env(
+    'DJANGO_CORS_ALLOW_HEADERS',
+    ['content-type', 'authorization', 'accept-language'],
+    delimiter=','
+)
+CORS_ALLOW_METHODS = get_list_env(
+    'DJANGO_CORS_ALLOW_METHODS',
+    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    delimiter=','
+)
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8080",
-    "http://localhost:8000",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:8000",
-]
+CSRF_TRUSTED_ORIGINS = get_list_env(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    [
+        'http://localhost:8080',
+        'http://localhost:8000',
+        'http://127.0.0.1:8080',
+        'http://127.0.0.1:8000',
+    ],
+    delimiter=','
+)
