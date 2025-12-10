@@ -3,6 +3,9 @@ from django.conf import settings
 from django.middleware.csrf import CsrfViewMiddleware
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LanguageMiddleware:
@@ -58,6 +61,7 @@ class JWTAuthenticationMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.jwt_authenticator = JWTAuthentication()
+        logger.debug("[JWT_AUTH_MIDDLEWARE] Initialized")
 
     def _authenticate_jwt(self, request):
         """
@@ -66,30 +70,44 @@ class JWTAuthenticationMiddleware:
         Returns:
             User object if authentication successful, None otherwise
         """
+        logger.debug(f"[JWT_AUTH_MIDDLEWARE] Step 1: Checking for JWT token in Authorization header")
         # Check if Authorization header exists
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
         if not auth_header.startswith('Bearer '):
+            logger.debug(f"[JWT_AUTH_MIDDLEWARE] Step 1.1: No Bearer token found in Authorization header")
             return None
         
+        logger.debug(f"[JWT_AUTH_MIDDLEWARE] Step 2: Bearer token found, extracting and validating")
         try:
             # Extract token and authenticate
             token = auth_header.split(' ')[1]
+            logger.debug(f"[JWT_AUTH_MIDDLEWARE] Step 2.1: Token extracted (length: {len(token)})")
             validated_token = self.jwt_authenticator.get_validated_token(token)
+            logger.debug(f"[JWT_AUTH_MIDDLEWARE] Step 2.2: Token validated successfully")
             user = self.jwt_authenticator.get_user(validated_token)
+            logger.info(f"[JWT_AUTH_MIDDLEWARE] Step 2.3: User authenticated via JWT - User ID: {user.id}")
             return user
-        except (InvalidToken, TokenError, IndexError, ValueError):
+        except (InvalidToken, TokenError, IndexError, ValueError) as e:
             # Token is invalid, malformed, or expired
+            logger.warning(f"[JWT_AUTH_MIDDLEWARE] Step 2.3: JWT authentication failed - {type(e).__name__}: {str(e)}")
             return None
 
     def __call__(self, request):
+        logger.debug(f"[JWT_AUTH_MIDDLEWARE] Processing request - Path: {request.path}")
         # Only process JWT authentication for API routes
         # For non-API routes, skip JWT authentication entirely (use session only)
         if request.path.startswith('/api/'):
+            logger.debug(f"[JWT_AUTH_MIDDLEWARE] API route detected, attempting JWT authentication")
             # For API routes, JWT token takes precedence over session authentication
             # This allows API clients to authenticate as different users even if session exists
             jwt_user = self._authenticate_jwt(request)
             if jwt_user:
+                logger.info(f"[JWT_AUTH_MIDDLEWARE] Setting request.user to JWT authenticated user: {jwt_user.id}")
                 request.user = jwt_user
+            else:
+                logger.debug(f"[JWT_AUTH_MIDDLEWARE] No JWT user found, using session authentication if available")
+        else:
+            logger.debug(f"[JWT_AUTH_MIDDLEWARE] Non-API route, skipping JWT authentication")
         
         response = self.get_response(request)
         return response
