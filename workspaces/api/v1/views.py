@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.utils import timezone
 from django.conf import settings
+import logging
 
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -11,6 +12,8 @@ from .serializers import WorkspaceSerializer, WorkspaceInvitationSerializer
 from .permissions import IsOwnerOrMember
 
 from drf_spectacular.utils import extend_schema
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(tags=["Workspace"])
@@ -45,11 +48,29 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         """
         Switch workspace and set cookie
         """
+        logger.info(f"[SWITCH_WORKSPACE] Step 1: Request received - User: {request.user.id}, Workspace ID: {pk}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 1.1: Request path: {request.path}, Method: {request.method}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 1.2: User authenticated: {request.user.is_authenticated}")
+        
+        # Get workspace object
+        logger.info(f"[SWITCH_WORKSPACE] Step 2: Retrieving workspace object with pk={pk}")
         workspace = self.get_object()
+        logger.info(f"[SWITCH_WORKSPACE] Step 2.1: Workspace found - ID: {workspace.id}, Name: {workspace.name}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 2.2: Workspace owner: {workspace.owner.id if workspace.owner else None}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 2.3: User is member: {request.user in workspace.members.all()}")
+        
+        # Check current workspace before switch
+        current_workspace = getattr(request, 'workspace', None)
+        logger.info(f"[SWITCH_WORKSPACE] Step 3: Current workspace - ID: {current_workspace.id if current_workspace else None}")
+        
+        # Create response
+        logger.info(f"[SWITCH_WORKSPACE] Step 4: Creating response object")
         response = Response({"detail": f"Switched to workspace {workspace.name}"}, status=status.HTTP_200_OK)
-
-        # environment-aware cookie
+        
+        # Set cookie based on environment
+        logger.info(f"[SWITCH_WORKSPACE] Step 5: Setting workspace cookie - DEBUG mode: {settings.DEBUG}")
         if settings.DEBUG:
+            logger.debug(f"[SWITCH_WORKSPACE] Step 5.1: Setting cookie in DEBUG mode (httponly=False, samesite=Lax, secure=False)")
             response.set_cookie(
                 "workspace",
                 str(workspace.id),
@@ -57,8 +78,9 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
                 samesite="Lax",
                 secure=False
             )
-            print("DEBUG: set cookie debug mode", workspace.id)
+            logger.info(f"[SWITCH_WORKSPACE] Step 5.2: Cookie set successfully - workspace={workspace.id}")
         else:
+            logger.debug(f"[SWITCH_WORKSPACE] Step 5.1: Setting cookie in PRODUCTION mode (httponly=True, samesite=None, secure=True)")
             response.set_cookie(
                 "workspace",
                 str(workspace.id),
@@ -66,7 +88,9 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
                 samesite="None",
                 secure=True
             )
-            print("DEBUG: set cookie", workspace.id)
+            logger.info(f"[SWITCH_WORKSPACE] Step 5.2: Cookie set successfully - workspace={workspace.id}")
+        
+        logger.info(f"[SWITCH_WORKSPACE] Step 6: Switch complete - From workspace {current_workspace.id if current_workspace else 'None'} to {workspace.id}")
         return response
 
 
