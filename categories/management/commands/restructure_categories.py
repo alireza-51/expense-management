@@ -157,6 +157,9 @@ class Command(BaseCommand):
             'Internet': 'Work & Business Expenses',
             'Host & Server': 'Work & Business Expenses',
             'VPN': 'Work & Business Expenses',
+            # Move standalone categories to become children
+            'Charity': 'Charity & Donations',  # Move standalone "Charity" to be child of "Charity & Donations"
+            'Debt': 'Financial Obligations',  # Move standalone "Debt" to be child of "Financial Obligations"
         }
 
         # Define new expense category structure with base colors
@@ -494,38 +497,80 @@ class Command(BaseCommand):
                 # Check if this category should be moved to this parent
                 should_move_here = category_moves.get(child_name) == parent_name
                 
-                # Try to find existing child category
-                existing_child = self.find_existing_category(
-                    child_name,
-                    Category.CategoryType.EXPENSE,
-                    parent=parent_category,
-                    name_mappings=name_mappings
-                )
+                # FIRST: Check if there's a standalone category that should become this child
+                # This handles cases like "Charity" (standalone) -> "Charity & Donations" -> "Charity" (child)
+                existing_child = None
+                standalone_to_merge = None
                 
-                # Also try to find by name only (might be under different parent)
-                # But be very careful - only if it's a move candidate or if there's exactly one match
+                if should_move_here:
+                    # Look for standalone category first (parent=None)
+                    try:
+                        standalone_to_merge = Category.objects.get(
+                            name__iexact=child_name,
+                            type=Category.CategoryType.EXPENSE,
+                            parent__isnull=True
+                        )
+                    except Category.DoesNotExist:
+                        standalone_to_merge = None
+                    except Category.MultipleObjectsReturned:
+                        # Multiple standalone found, use the first one
+                        standalone_to_merge = Category.objects.filter(
+                            name__iexact=child_name,
+                            type=Category.CategoryType.EXPENSE,
+                            parent__isnull=True
+                        ).first()
+                    
+                    # Check if there's already a child with this name under the parent
+                    try:
+                        existing_child = Category.objects.get(
+                            name__iexact=child_name,
+                            type=Category.CategoryType.EXPENSE,
+                            parent=parent_category
+                        )
+                    except Category.DoesNotExist:
+                        existing_child = None
+                    except Category.MultipleObjectsReturned:
+                        existing_child = Category.objects.filter(
+                            name__iexact=child_name,
+                            type=Category.CategoryType.EXPENSE,
+                            parent=parent_category
+                        ).first()
+                    
+                    # If we found both standalone and existing child, merge them
+                    if standalone_to_merge and existing_child:
+                        # Merge: move expenses/incomes from standalone to existing child
+                        from expenses.models import Expense, Income
+                        standalone_id = standalone_to_merge.id
+                        Expense.objects.filter(category=standalone_to_merge).update(category=existing_child)
+                        Income.objects.filter(category=standalone_to_merge).update(category=existing_child)
+                        # Move children of standalone to existing child
+                        Category.objects.filter(parent=standalone_to_merge).update(parent=existing_child)
+                        # Delete standalone
+                        standalone_to_merge.delete()
+                        self.stdout.write(f'  ↻ Merged standalone "{child_name}" (id: {standalone_id}) into existing child (id: {existing_child.id}) under {parent_category.name}')
+                    elif standalone_to_merge:
+                        # Use standalone, will be moved to become child
+                        existing_child = standalone_to_merge
+                    # If only existing_child found, use it (already in place)
+                
+                # If not found yet, try normal search
                 if not existing_child:
-                    if should_move_here:
-                        # For move candidates, search by name only (will be moved to correct parent)
-                        try:
-                            existing_child = Category.objects.get(name__iexact=child_name, type=Category.CategoryType.EXPENSE)
-                        except Category.DoesNotExist:
-                            existing_child = None
-                        except Category.MultipleObjectsReturned:
-                            # If multiple found, prefer one that's NOT already under the target parent
-                            candidates = Category.objects.filter(name__iexact=child_name, type=Category.CategoryType.EXPENSE)
-                            existing_child = candidates.exclude(parent=parent_category).first() or candidates.first()
-                    else:
+                    existing_child = self.find_existing_category(
+                        child_name,
+                        Category.CategoryType.EXPENSE,
+                        parent=parent_category,
+                        name_mappings=name_mappings
+                    )
+                    
+                    # Also try to find by name only (might be under different parent)
+                    if not existing_child:
                         # For non-move candidates, only search if there's exactly one match
-                        # This prevents moving wrong categories with same name
                         count = Category.objects.filter(name__iexact=child_name, type=Category.CategoryType.EXPENSE).count()
                         if count == 1:
                             try:
                                 existing_child = Category.objects.get(name__iexact=child_name, type=Category.CategoryType.EXPENSE)
                                 # Don't use parent categories (parent=None) as children unless explicitly moved
-                                # Only use it if it's already a child (has a parent) and matches, or is orphaned
                                 if existing_child.parent is None:
-                                    # It's a parent category, don't use it as a child
                                     existing_child = None
                                 elif existing_child.parent == parent_category:
                                     pass  # Use it, already in correct place
@@ -561,11 +606,13 @@ class Command(BaseCommand):
                     # Only move if explicitly should_move_here (category_moves) or if update_parents and parent doesn't match
                     # But don't move if it's already in the right place
                     if should_move_here:
-                        # Explicit move requested
+                        # Explicit move requested (standalone -> child)
                         if old_parent != parent_category:
                             child_category.parent = parent_category
                             updated = True
                             moved = True
+                            # If this category has children, they will automatically move with it
+                            # (because parent FK cascades)
                     elif update_parents and old_parent != parent_category:
                         # Only move if parent doesn't match AND update_parents is enabled
                         # But check if this category name matches exactly (avoid wrong moves)
