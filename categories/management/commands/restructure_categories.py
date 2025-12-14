@@ -1,54 +1,6 @@
 from django.core.management.base import BaseCommand
 from categories.models import Category
-import colorsys
-
-
-def hex_to_rgb(hex_color):
-    """Convert hex color to RGB tuple"""
-    hex_color = hex_color.lstrip('#')
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-
-
-def rgb_to_hex(rgb):
-    """Convert RGB tuple to hex color"""
-    return '#{:02X}{:02X}{:02X}'.format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
-
-
-def lighten_color(hex_color, factor=0.15):
-    """Lighten a color by a factor (0-1)"""
-    rgb = hex_to_rgb(hex_color)
-    # Convert to HSL
-    h, s, l = colorsys.rgb_to_hls(rgb[0]/255.0, rgb[1]/255.0, rgb[2]/255.0)
-    # Lighten
-    l = min(1.0, l + factor)
-    # Convert back to RGB
-    r, g, b = colorsys.hls_to_rgb(h, l, s)
-    return rgb_to_hex((r*255, g*255, b*255))
-
-
-def get_color_for_level(base_color, level):
-    """Get color for a specific hierarchy level (0=parent, 1=child, 2=grandchild)"""
-    if level == 0:
-        return base_color
-    elif level == 1:
-        return lighten_color(base_color, factor=0.15)
-    else:
-        return lighten_color(base_color, factor=0.25)
-
-
-def get_color_for_child_index(base_color, index, total_children):
-    """Get color for a child category based on its index (0-based)
-    First child (index 0) is darker, last child is lighter"""
-    if total_children <= 1:
-        # Only one child, use standard child color
-        return lighten_color(base_color, factor=0.15)
-    
-    # Calculate lightening factor: from 0.10 (darker) to 0.20 (lighter)
-    # First child gets 0.10, last child gets 0.20
-    min_factor = 0.10
-    max_factor = 0.20
-    factor = min_factor + (max_factor - min_factor) * (index / (total_children - 1))
-    return lighten_color(base_color, factor=factor)
+from categories.color_utils import calculate_child_color
 
 
 class Command(BaseCommand):
@@ -62,11 +14,17 @@ class Command(BaseCommand):
     
     Usage:
     - python manage.py restructure_categories  # Updates matching categories, creates missing ones
+    - python manage.py restructure_categories --colors-only  # Only update colors, don't change other data
     - python manage.py restructure_categories --no-update-colors  # Don't update colors
     - python manage.py restructure_categories --no-update-parents  # Don't update parent relationships
     '''
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            '--colors-only',
+            action='store_true',
+            help='ONLY update colors. Do not change names, descriptions, parent relationships, or create new categories.',
+        )
         parser.add_argument(
             '--no-update-colors',
             action='store_true',
@@ -77,6 +35,42 @@ class Command(BaseCommand):
             action='store_true',
             help='Do NOT update parent relationships of existing categories',
         )
+    
+    def recalculate_sibling_colors(self, parent_category, category_type, update_colors=True):
+        """
+        Recalculate colors for all children of a parent based on their actual IDs.
+        
+        This ensures colors are calculated correctly based on sibling ID order,
+        which is required for the deterministic color algorithm.
+        """
+        if not update_colors:
+            return
+        
+        # Get all siblings sorted by ID
+        siblings = Category.objects.filter(
+            parent=parent_category,
+            type=category_type
+        ).order_by('id')
+        
+        if not siblings.exists():
+            return
+        
+        parent_color = parent_category.color
+        sibling_ids = list(siblings.values_list('id', flat=True))
+        
+        # Update colors for all siblings
+        updated_any = False
+        for sibling in siblings:
+            new_color = calculate_child_color(
+                parent_color=parent_color,
+                sibling_id=sibling.pk,
+                sibling_ids=sibling_ids
+            )
+            if sibling.color != new_color:
+                Category.objects.filter(pk=sibling.pk).update(color=new_color)
+                updated_any = True
+        
+        return updated_any
 
     def find_existing_category(self, name, category_type, parent=None, name_mappings=None):
         """Find existing category by name (with case-insensitive matching and mappings)"""
@@ -151,8 +145,17 @@ class Command(BaseCommand):
         return None
 
     def handle(self, *args, **options):
+        colors_only = options.get('colors_only', False)
         update_colors = not options.get('no_update_colors', False)  # Default to True
         update_parents = not options.get('no_update_parents', False)  # Default to True
+        
+        # If colors_only is set, only update colors
+        if colors_only:
+            update_colors = True
+            update_parents = False
+            self.stdout.write(self.style.WARNING(
+                '\n⚠ COLORS-ONLY MODE: Only updating colors. No other data will be modified.\n'
+            ))
 
         # Comprehensive name mappings for existing categories
         # Format: {'old_name': 'new_name'}
@@ -486,23 +489,25 @@ class Command(BaseCommand):
                 renamed = False
                 old_name = parent_category.name
                 
-                # Check if category needs to be renamed
-                # If the found category's name is different from target, and it maps to target, rename it
-                if parent_category.name != parent_name:
-                    # Check if old name maps to new name
-                    if name_mappings.get(parent_category.name) == parent_name:
-                        # Category was found via mapping, needs to be renamed
-                        parent_category.name = parent_name
+                # Skip renaming and description updates in colors-only mode
+                if not colors_only:
+                    # Check if category needs to be renamed
+                    # If the found category's name is different from target, and it maps to target, rename it
+                    if parent_category.name != parent_name:
+                        # Check if old name maps to new name
+                        if name_mappings.get(parent_category.name) == parent_name:
+                            # Category was found via mapping, needs to be renamed
+                            parent_category.name = parent_name
+                            updated = True
+                            renamed = True
+                    
+                    new_description = parent_data.get('description', f'Main category for {parent_name.lower()} expenses')
+                    if parent_category.description != new_description:
+                        parent_category.description = new_description
                         updated = True
-                        renamed = True
                 
                 if update_colors and parent_category.color != parent_data['color']:
                     parent_category.color = parent_data['color']
-                    updated = True
-                
-                new_description = parent_data.get('description', f'Main category for {parent_name.lower()} expenses')
-                if parent_category.description != new_description:
-                    parent_category.description = new_description
                     updated = True
                 
                 if updated:
@@ -510,12 +515,19 @@ class Command(BaseCommand):
                     updated_count += 1
                     if renamed:
                         self.stdout.write(f'↻ Renamed & updated parent: {old_name} -> {parent_category.name}')
+                    elif update_colors and parent_category.color == parent_data['color']:
+                        self.stdout.write(f'↻ Updated color for parent: {parent_category.name}')
                     else:
                         self.stdout.write(f'↻ Updated parent: {parent_category.name}')
                 else:
                     self.stdout.write(f'✓ Found existing parent: {parent_category.name}')
             else:
-                # Create new parent category
+                # Create new parent category (skip in colors-only mode)
+                if colors_only:
+                    self.stdout.write(f'⊘ Skipped creating parent (colors-only mode): {parent_name}')
+                    # Skip processing children if parent doesn't exist in colors-only mode
+                    continue
+                
                 parent_category = Category.objects.create(
                     name=parent_name,
                     type=Category.CategoryType.EXPENSE,
@@ -526,13 +538,12 @@ class Command(BaseCommand):
                 created_count += 1
                 self.stdout.write(f'✓ Created parent: {parent_category.name}')
 
-            # Process children with gradient colors
+            # Process children - colors will be recalculated after all are created/updated
             children_items = list(parent_data.get('children', {}).items())
-            total_children = len(children_items)
             
-            for child_index, (child_name, child_data) in enumerate(children_items):
-                # Generate gradient color: darker for first child, lighter for last child
-                child_color = get_color_for_child_index(parent_data['color'], child_index, total_children)
+            for child_name, child_data in children_items:
+                # Temporary color - will be recalculated based on actual sibling IDs
+                child_color = parent_data['color']  # Will be recalculated
                 
                 # Check if this category should be moved to this parent
                 should_move_here = category_moves.get(child_name) == parent_name
@@ -622,42 +633,43 @@ class Command(BaseCommand):
                     moved = False
                     renamed = False
                     
-                    # Check if category needs to be renamed
-                    # If the found category's name is different from target, and it maps to target, rename it
-                    if child_category.name != child_name:
-                        # Check if old name maps to new name
-                        if name_mappings.get(child_category.name) == child_name:
-                            # Category was found via mapping, needs to be renamed
-                            child_category.name = child_name
+                    # Skip renaming, moving, and description updates in colors-only mode
+                    if not colors_only:
+                        # Check if category needs to be renamed
+                        # If the found category's name is different from target, and it maps to target, rename it
+                        if child_category.name != child_name:
+                            # Check if old name maps to new name
+                            if name_mappings.get(child_category.name) == child_name:
+                                # Category was found via mapping, needs to be renamed
+                                child_category.name = child_name
+                                updated = True
+                                renamed = True
+                        
+                        # Only move if explicitly should_move_here (category_moves) or if update_parents and parent doesn't match
+                        # But don't move if it's already in the right place
+                        if should_move_here:
+                            # Explicit move requested (standalone -> child)
+                            if old_parent != parent_category:
+                                child_category.parent = parent_category
+                                updated = True
+                                moved = True
+                                # If this category has children, they will automatically move with it
+                                # (because parent FK cascades)
+                        elif update_parents and old_parent != parent_category:
+                            # Only move if parent doesn't match AND update_parents is enabled
+                            # But check if this category name matches exactly (avoid wrong moves)
+                            if child_category.name == child_name or child_category.name.lower() == child_name.lower():
+                                child_category.parent = parent_category
+                                updated = True
+                                moved = True
+                        
+                        new_description = child_data.get('description', f'Subcategory of {parent_category.name}')
+                        if child_category.description != new_description:
+                            child_category.description = new_description
                             updated = True
-                            renamed = True
                     
-                    if update_colors and child_category.color != child_color:
-                        child_category.color = child_color
-                        updated = True
-                    
-                    # Only move if explicitly should_move_here (category_moves) or if update_parents and parent doesn't match
-                    # But don't move if it's already in the right place
-                    if should_move_here:
-                        # Explicit move requested (standalone -> child)
-                        if old_parent != parent_category:
-                            child_category.parent = parent_category
-                            updated = True
-                            moved = True
-                            # If this category has children, they will automatically move with it
-                            # (because parent FK cascades)
-                    elif update_parents and old_parent != parent_category:
-                        # Only move if parent doesn't match AND update_parents is enabled
-                        # But check if this category name matches exactly (avoid wrong moves)
-                        if child_category.name == child_name or child_category.name.lower() == child_name.lower():
-                            child_category.parent = parent_category
-                            updated = True
-                            moved = True
-                    
-                    new_description = child_data.get('description', f'Subcategory of {parent_category.name}')
-                    if child_category.description != new_description:
-                        child_category.description = new_description
-                        updated = True
+                    # Color will be recalculated after all siblings are processed
+                    # Don't update color here - it will be done in batch
                     
                     if updated:
                         child_category.save()
@@ -675,12 +687,17 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write(f'  ✓ Found existing child: {child_category.name}')
                 else:
-                    # Create new child category
+                    # Create new child category (skip in colors-only mode)
+                    if colors_only:
+                        self.stdout.write(f'  ⊘ Skipped creating child (colors-only mode): {child_name}')
+                        continue
+                    
+                    # Use parent color temporarily - will be recalculated
                     child_category = Category.objects.create(
                         name=child_name,
                         type=Category.CategoryType.EXPENSE,
                         parent=parent_category,
-                        color=child_color,
+                        color=parent_data['color'],  # Temporary - will be recalculated
                         description=child_data.get('description', f'Subcategory of {parent_category.name}')
                     )
                     created_count += 1
@@ -690,16 +707,11 @@ class Command(BaseCommand):
                 grandchildren_items = list(child_data.get('children', {}).items())
                 total_grandchildren = len(grandchildren_items)
                 
-                for grandchild_index, (grandchild_name, grandchild_data) in enumerate(grandchildren_items):
-                    # Generate gradient color for grandchildren based on their parent (child) color
-                    # Use the child's current color as base (might have been updated)
-                    # child_category is always defined at this point (either found or created)
+                for grandchild_name, grandchild_data in grandchildren_items:
+                    # Color will be recalculated after all grandchildren are processed
+                    # Use child color temporarily
                     grandchild_base_color = child_category.color
-                    
-                    # Generate gradient color for grandchildren
-                    grandchild_color = get_color_for_child_index(grandchild_base_color, grandchild_index, total_grandchildren)
-                    # Additional lightening for grandchild level (make them lighter than children)
-                    grandchild_color = lighten_color(grandchild_color, factor=0.08)
+                    grandchild_color = grandchild_base_color  # Temporary - will be recalculated
                     
                     # Try to find existing grandchild category - first check under the child_category
                     existing_grandchild = Category.objects.filter(
@@ -729,18 +741,19 @@ class Command(BaseCommand):
                         grandchild_category = existing_grandchild
                         updated = False
                         
-                        if update_colors and grandchild_category.color != grandchild_color:
-                            grandchild_category.color = grandchild_color
-                            updated = True
+                        # Color will be recalculated after all siblings are processed
+                        # Don't update color here
                         
-                        if update_parents and grandchild_category.parent != child_category:
-                            grandchild_category.parent = child_category
-                            updated = True
-                        
-                        new_description = f'Subcategory of {child_category.name}'
-                        if grandchild_category.description != new_description:
-                            grandchild_category.description = new_description
-                            updated = True
+                        # Skip moving and description updates in colors-only mode
+                        if not colors_only:
+                            if update_parents and grandchild_category.parent != child_category:
+                                grandchild_category.parent = child_category
+                                updated = True
+                            
+                            new_description = f'Subcategory of {child_category.name}'
+                            if grandchild_category.description != new_description:
+                                grandchild_category.description = new_description
+                                updated = True
                         
                         if updated:
                             grandchild_category.save()
@@ -752,16 +765,31 @@ class Command(BaseCommand):
                         else:
                             self.stdout.write(f'    ✓ Found existing grandchild: {grandchild_category.name}')
                     else:
-                        # Create new grandchild category
+                        # Create new grandchild category (skip in colors-only mode)
+                        if colors_only:
+                            self.stdout.write(f'    ⊘ Skipped creating grandchild (colors-only mode): {grandchild_name}')
+                            # Continue to next grandchild
+                            continue
+                        
+                        # Use child color temporarily - will be recalculated
                         grandchild_category = Category.objects.create(
                             name=grandchild_name,
                             type=Category.CategoryType.EXPENSE,
                             parent=child_category,
-                            color=grandchild_color,
+                            color=child_category.color,  # Temporary - will be recalculated
                             description=f'Subcategory of {child_category.name}'
                         )
                         created_count += 1
                         self.stdout.write(f'    ✓ Created grandchild: {grandchild_category.name}')
+                
+                # Recalculate colors for all grandchildren of this child
+                if update_colors:
+                    self.recalculate_sibling_colors(child_category, Category.CategoryType.EXPENSE, update_colors)
+            
+            # Recalculate colors for all children of this parent
+            # This ensures colors are based on actual sibling IDs
+            if update_colors:
+                self.recalculate_sibling_colors(parent_category, Category.CategoryType.EXPENSE, update_colors)
 
         # Process income categories
         self.stdout.write(self.style.SUCCESS('\n=== Processing Income Categories ===\n'))
@@ -781,23 +809,25 @@ class Command(BaseCommand):
                 renamed = False
                 old_name = parent_category.name
                 
-                # Check if category needs to be renamed
-                # If the found category's name is different from target, and it maps to target, rename it
-                if parent_category.name != parent_name:
-                    # Check if old name maps to new name
-                    if name_mappings.get(parent_category.name) == parent_name:
-                        # Category was found via mapping, needs to be renamed
-                        parent_category.name = parent_name
+                # Skip renaming and description updates in colors-only mode
+                if not colors_only:
+                    # Check if category needs to be renamed
+                    # If the found category's name is different from target, and it maps to target, rename it
+                    if parent_category.name != parent_name:
+                        # Check if old name maps to new name
+                        if name_mappings.get(parent_category.name) == parent_name:
+                            # Category was found via mapping, needs to be renamed
+                            parent_category.name = parent_name
+                            updated = True
+                            renamed = True
+                    
+                    new_description = parent_data.get('description', f'Main category for {parent_name.lower()} income')
+                    if parent_category.description != new_description:
+                        parent_category.description = new_description
                         updated = True
-                        renamed = True
                 
                 if update_colors and parent_category.color != parent_data['color']:
                     parent_category.color = parent_data['color']
-                    updated = True
-                
-                new_description = parent_data.get('description', f'Main category for {parent_name.lower()} income')
-                if parent_category.description != new_description:
-                    parent_category.description = new_description
                     updated = True
                 
                 if updated:
@@ -805,12 +835,19 @@ class Command(BaseCommand):
                     updated_count += 1
                     if renamed:
                         self.stdout.write(f'↻ Renamed & updated parent: {old_name} -> {parent_category.name}')
+                    elif update_colors and parent_category.color == parent_data['color']:
+                        self.stdout.write(f'↻ Updated color for parent: {parent_category.name}')
                     else:
                         self.stdout.write(f'↻ Updated parent: {parent_category.name}')
                 else:
                     self.stdout.write(f'✓ Found existing parent: {parent_category.name}')
             else:
-                # Create new parent category
+                # Create new parent category (skip in colors-only mode)
+                if colors_only:
+                    self.stdout.write(f'⊘ Skipped creating parent (colors-only mode): {parent_name}')
+                    # Skip processing children if parent doesn't exist in colors-only mode
+                    continue
+                
                 parent_category = Category.objects.create(
                     name=parent_name,
                     type=Category.CategoryType.INCOME,
@@ -821,13 +858,12 @@ class Command(BaseCommand):
                 created_count += 1
                 self.stdout.write(f'✓ Created parent: {parent_category.name}')
 
-            # Process children with gradient colors
+            # Process children - colors will be recalculated after all are created/updated
             children_items = list(parent_data.get('children', {}).items())
-            total_children = len(children_items)
             
-            for child_index, (child_name, child_data) in enumerate(children_items):
-                # Generate gradient color: darker for first child, lighter for last child
-                child_color = get_color_for_child_index(parent_data['color'], child_index, total_children)
+            for child_name, child_data in children_items:
+                # Temporary color - will be recalculated based on actual sibling IDs
+                child_color = parent_data['color']  # Will be recalculated
                 
                 # Try to find existing child category
                 existing_child = self.find_existing_category(
@@ -849,18 +885,19 @@ class Command(BaseCommand):
                     child_category = existing_child
                     updated = False
                     
-                    if update_colors and child_category.color != child_color:
-                        child_category.color = child_color
-                        updated = True
+                    # Skip moving and description updates in colors-only mode
+                    if not colors_only:
+                        if update_parents and child_category.parent != parent_category:
+                            child_category.parent = parent_category
+                            updated = True
+                        
+                        new_description = child_data.get('description', f'Subcategory of {parent_category.name}')
+                        if child_category.description != new_description:
+                            child_category.description = new_description
+                            updated = True
                     
-                    if update_parents and child_category.parent != parent_category:
-                        child_category.parent = parent_category
-                        updated = True
-                    
-                    new_description = child_data.get('description', f'Subcategory of {parent_category.name}')
-                    if child_category.description != new_description:
-                        child_category.description = new_description
-                        updated = True
+                    # Color will be recalculated after all siblings are processed
+                    # Don't update color here
                     
                     if updated:
                         child_category.save()
@@ -872,16 +909,26 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write(f'  ✓ Found existing child: {child_category.name}')
                 else:
-                    # Create new child category
+                    # Create new child category (skip in colors-only mode)
+                    if colors_only:
+                        self.stdout.write(f'  ⊘ Skipped creating child (colors-only mode): {child_name}')
+                        continue
+                    
+                    # Use parent color temporarily - will be recalculated
                     child_category = Category.objects.create(
                         name=child_name,
                         type=Category.CategoryType.INCOME,
                         parent=parent_category,
-                        color=child_color,
+                        color=parent_data['color'],  # Temporary - will be recalculated
                         description=child_data.get('description', f'Subcategory of {parent_category.name}')
                     )
                     created_count += 1
                     self.stdout.write(f'  ✓ Created child: {child_category.name}')
+            
+            # Recalculate colors for all children of this parent
+            # This ensures colors are based on actual sibling IDs
+            if update_colors:
+                self.recalculate_sibling_colors(parent_category, Category.CategoryType.INCOME, update_colors)
 
         # Summary
         self.stdout.write(self.style.SUCCESS(
