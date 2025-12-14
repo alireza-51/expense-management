@@ -18,7 +18,29 @@ def get_list_env(name, default=None, delimiter=","):
     value = os.getenv(name)
     if not value:
         return default or []
-    return [item.strip() for item in value.split(delimiter) if item.strip()]
+    # Clean up values: strip whitespace and remove trailing slashes from URLs
+    cleaned = []
+    for item in value.split(delimiter):
+        item = item.strip()
+        if item:
+            # Remove trailing slash from URLs
+            if item.endswith('/'):
+                item = item[:-1]
+            cleaned.append(item)
+    return cleaned
+
+def is_production():
+    """
+    Detect if we're in production environment.
+    Production is defined as: not DEBUG (or explicitly set via HTTPS env var)
+    """
+    debug = get_bool_env('DJANGO_DEBUG', True)
+    # Check if we're behind a proxy that indicates HTTPS
+    # (common in production deployments like Liara, Heroku, etc.)
+    # If HTTPS env is set, assume production even if DEBUG is true (for staging)
+    https_env = os.getenv('HTTPS', '').lower() in ('1', 'true', 'on', 'yes')
+    # Production if DEBUG is false OR if HTTPS is explicitly set
+    return not debug or https_env
 
 # -----------------------------
 # Paths
@@ -31,6 +53,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-ruk!g%xwp%i5xdu44_3v2^r##i_@8cnabg_#ykdhjrgea#w6i!')
 DEBUG = get_bool_env('DJANGO_DEBUG', True)
 ALLOWED_HOSTS = get_list_env('DJANGO_ALLOWED_HOSTS', ['localhost', '127.0.0.1'])
+
+# Production detection
+IS_PRODUCTION = is_production()
 
 # -----------------------------
 # Installed apps
@@ -138,6 +163,8 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = os.getenv("DJANGO_LANGUAGE_CODE", "en")
 USE_I18N = True
 USE_L10N = True
+USE_TZ = True
+TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "UTC")
 
 LANGUAGES = [
     ("en", "English"),
@@ -201,7 +228,7 @@ UNFOLD = {
 # -----------------------------
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10,
+    "PAGE_SIZE": int(os.getenv("DJANGO_PAGE_SIZE", "10")),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASS": "rest_framework.permissions.IsAuthenticated",
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -245,16 +272,48 @@ CORS_ALLOW_METHODS = get_list_env(
     delimiter=','
 )
 
+# CSRF trusted origins - defaults to CORS allowed origins if not set
+_csrf_defaults = get_list_env('DJANGO_CORS_ALLOWED_ORIGINS', [
+    'http://localhost:8080',
+    'http://localhost:8000',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:8000',
+], delimiter=',')
 CSRF_TRUSTED_ORIGINS = get_list_env(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
-    [
-        'http://localhost:8080',
-        'http://localhost:8000',
-        'http://127.0.0.1:8080',
-        'http://127.0.0.1:8000',
-    ],
+    _csrf_defaults,
     delimiter=','
 )
+
+# -----------------------------
+# Security Settings (Production)
+# -----------------------------
+if IS_PRODUCTION:
+    # Force HTTPS redirects
+    SECURE_SSL_REDIRECT = get_bool_env('DJANGO_SECURE_SSL_REDIRECT', True)
+    # Session cookie security
+    SESSION_COOKIE_SECURE = get_bool_env('DJANGO_SESSION_COOKIE_SECURE', True)
+    SESSION_COOKIE_HTTPONLY = get_bool_env('DJANGO_SESSION_COOKIE_HTTPONLY', True)
+    SESSION_COOKIE_SAMESITE = os.getenv('DJANGO_SESSION_COOKIE_SAMESITE', 'None')  # Allow cross-site for API
+    # CSRF cookie security
+    CSRF_COOKIE_SECURE = get_bool_env('DJANGO_CSRF_COOKIE_SECURE', True)
+    CSRF_COOKIE_HTTPONLY = get_bool_env('DJANGO_CSRF_COOKIE_HTTPONLY', True)
+    CSRF_COOKIE_SAMESITE = os.getenv('DJANGO_CSRF_COOKIE_SAMESITE', 'None')  # Allow cross-site for API
+    # Security headers
+    SECURE_BROWSER_XSS_FILTER = get_bool_env('DJANGO_SECURE_BROWSER_XSS_FILTER', True)
+    SECURE_CONTENT_TYPE_NOSNIFF = get_bool_env('DJANGO_SECURE_CONTENT_TYPE_NOSNIFF', True)
+    X_FRAME_OPTIONS = os.getenv('DJANGO_X_FRAME_OPTIONS', 'DENY')
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '31536000'))  # 1 year default
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = get_bool_env('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', True)
+    SECURE_HSTS_PRELOAD = get_bool_env('DJANGO_SECURE_HSTS_PRELOAD', True)
+    # Proxy settings (for deployments behind reverse proxy)
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+else:
+    # Development: relaxed security
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # -----------------------------
 # Logging Configuration
@@ -285,22 +344,22 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
         'workspaces': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': os.getenv('DJANGO_WORKSPACES_LOG_LEVEL', 'DEBUG'),
             'propagate': False,
         },
         'config': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': os.getenv('DJANGO_CONFIG_LOG_LEVEL', 'DEBUG'),
             'propagate': False,
         },
     },

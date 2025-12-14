@@ -51,6 +51,9 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         logger.info(f"[SWITCH_WORKSPACE] Step 1: Request received - User: {request.user.id}, Workspace ID: {pk}")
         logger.debug(f"[SWITCH_WORKSPACE] Step 1.1: Request path: {request.path}, Method: {request.method}")
         logger.debug(f"[SWITCH_WORKSPACE] Step 1.2: User authenticated: {request.user.is_authenticated}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 1.3: Request origin: {request.META.get('HTTP_ORIGIN', 'Not set')}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 1.4: Request referer: {request.META.get('HTTP_REFERER', 'Not set')}")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 1.5: Cookies in request: {list(request.COOKIES.keys())}")
         
         # Get workspace object
         logger.info(f"[SWITCH_WORKSPACE] Step 2: Retrieving workspace object with pk={pk}")
@@ -67,28 +70,54 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         logger.info(f"[SWITCH_WORKSPACE] Step 4: Creating response object")
         response = Response({"detail": f"Switched to workspace {workspace.name}"}, status=status.HTTP_200_OK)
         
+        # Ensure CORS credentials header is set for cross-origin cookie support
+        response["Access-Control-Allow-Credentials"] = "true"
+        logger.debug(f"[SWITCH_WORKSPACE] Step 4.1: Set Access-Control-Allow-Credentials header")
+        
+        # Also set in session as fallback for immediate subsequent requests
+        # (cookies may not be immediately available in cross-origin scenarios)
+        request.session["workspace"] = str(workspace.id)
+        request.session.save()
+        logger.debug(f"[SWITCH_WORKSPACE] Step 4.2: Workspace also set in session: {workspace.id}")
+        
         # Set cookie based on environment
-        logger.info(f"[SWITCH_WORKSPACE] Step 5: Setting workspace cookie - DEBUG mode: {settings.DEBUG}")
-        if settings.DEBUG:
-            logger.debug(f"[SWITCH_WORKSPACE] Step 5.1: Setting cookie in DEBUG mode (httponly=False, samesite=Lax, secure=False)")
+        # Cookie expires in 30 days (30 * 24 * 60 * 60 seconds)
+        max_age = 30 * 24 * 60 * 60
+        
+        # Detect if request is HTTPS (production)
+        is_https = request.is_secure() or request.META.get('HTTP_X_FORWARDED_PROTO') == 'https'
+        is_production = settings.IS_PRODUCTION or is_https
+        
+        logger.info(f"[SWITCH_WORKSPACE] Step 5: Setting workspace cookie - Production: {is_production}, HTTPS: {is_https}, DEBUG: {settings.DEBUG}")
+        
+        if is_production:
+            logger.debug(f"[SWITCH_WORKSPACE] Step 5.1: Setting cookie in PRODUCTION mode (httponly=True, samesite=None, secure=True, max_age={max_age})")
             response.set_cookie(
                 "workspace",
                 str(workspace.id),
-                httponly=False,
-                samesite="Lax",
-                secure=False
-            )
-            logger.info(f"[SWITCH_WORKSPACE] Step 5.2: Cookie set successfully - workspace={workspace.id}")
-        else:
-            logger.debug(f"[SWITCH_WORKSPACE] Step 5.1: Setting cookie in PRODUCTION mode (httponly=True, samesite=None, secure=True)")
-            response.set_cookie(
-                "workspace",
-                str(workspace.id),
+                max_age=max_age,
+                path="/",
                 httponly=True,
                 samesite="None",
                 secure=True
             )
             logger.info(f"[SWITCH_WORKSPACE] Step 5.2: Cookie set successfully - workspace={workspace.id}")
+        else:
+            logger.debug(f"[SWITCH_WORKSPACE] Step 5.1: Setting cookie in DEBUG mode (httponly=False, samesite=Lax, secure=False, max_age={max_age})")
+            response.set_cookie(
+                "workspace",
+                str(workspace.id),
+                max_age=max_age,
+                path="/",
+                httponly=False,
+                samesite="Lax",
+                secure=False
+            )
+            logger.info(f"[SWITCH_WORKSPACE] Step 5.2: Cookie set successfully - workspace={workspace.id}")
+        
+        # Log the actual Set-Cookie header
+        set_cookie_header = response.get("Set-Cookie", "Not found")
+        logger.debug(f"[SWITCH_WORKSPACE] Step 5.3: Set-Cookie header value: {set_cookie_header}")
         
         logger.info(f"[SWITCH_WORKSPACE] Step 6: Switch complete - From workspace {current_workspace.id if current_workspace else 'None'} to {workspace.id}")
         return response
