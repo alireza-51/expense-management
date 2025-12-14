@@ -91,6 +91,12 @@ class Command(BaseCommand):
                 return Category.objects.get(name=name, type=category_type, parent__isnull=True)
         except Category.DoesNotExist:
             pass
+        except Category.MultipleObjectsReturned:
+            # If multiple found, return the first one
+            if parent:
+                return Category.objects.filter(name=name, type=category_type, parent=parent).first()
+            else:
+                return Category.objects.filter(name=name, type=category_type, parent__isnull=True).first()
         
         # Try case-insensitive match
         try:
@@ -100,6 +106,12 @@ class Command(BaseCommand):
                 return Category.objects.get(name__iexact=name, type=category_type, parent__isnull=True)
         except Category.DoesNotExist:
             pass
+        except Category.MultipleObjectsReturned:
+            # If multiple found, return the first one
+            if parent:
+                return Category.objects.filter(name__iexact=name, type=category_type, parent=parent).first()
+            else:
+                return Category.objects.filter(name__iexact=name, type=category_type, parent__isnull=True).first()
         
         # Try mapping
         mapped_name = name_mappings.get(name)
@@ -111,6 +123,12 @@ class Command(BaseCommand):
                     return Category.objects.get(name=mapped_name, type=category_type, parent__isnull=True)
             except Category.DoesNotExist:
                 pass
+            except Category.MultipleObjectsReturned:
+                # If multiple found, return the first one
+                if parent:
+                    return Category.objects.filter(name=mapped_name, type=category_type, parent=parent).first()
+                else:
+                    return Category.objects.filter(name=mapped_name, type=category_type, parent__isnull=True).first()
         
         # Try reverse mapping (check if any existing category maps to this name)
         reverse_mapping = {v: k for k, v in name_mappings.items()}
@@ -123,6 +141,12 @@ class Command(BaseCommand):
                     return Category.objects.get(name__iexact=old_name, type=category_type, parent__isnull=True)
             except Category.DoesNotExist:
                 pass
+            except Category.MultipleObjectsReturned:
+                # If multiple found, return the first one
+                if parent:
+                    return Category.objects.filter(name__iexact=old_name, type=category_type, parent=parent).first()
+                else:
+                    return Category.objects.filter(name__iexact=old_name, type=category_type, parent__isnull=True).first()
         
         return None
 
@@ -431,6 +455,18 @@ class Command(BaseCommand):
 
         created_count = 0
         updated_count = 0
+        merged_count = 0
+
+        # Check if any categories exist in the database
+        total_existing = Category.objects.count()
+        if total_existing == 0:
+            self.stdout.write(self.style.WARNING(
+                '\n⚠ WARNING: No categories found in database. All categories will be created new.\n'
+            ))
+        else:
+            self.stdout.write(self.style.SUCCESS(
+                f'\n✓ Found {total_existing} existing categories in database\n'
+            ))
 
         # Process expense categories
         self.stdout.write(self.style.SUCCESS('\n=== Processing Expense Categories ===\n'))
@@ -490,70 +526,53 @@ class Command(BaseCommand):
                 created_count += 1
                 self.stdout.write(f'✓ Created parent: {parent_category.name}')
 
-            # Process children
-            for child_name, child_data in parent_data.get('children', {}).items():
-                child_color = get_color_for_level(parent_data['color'], 1)
+            # Process children with gradient colors
+            children_items = list(parent_data.get('children', {}).items())
+            total_children = len(children_items)
+            
+            for child_index, (child_name, child_data) in enumerate(children_items):
+                # Generate gradient color: darker for first child, lighter for last child
+                child_color = get_color_for_child_index(parent_data['color'], child_index, total_children)
                 
                 # Check if this category should be moved to this parent
                 should_move_here = category_moves.get(child_name) == parent_name
                 
-                # FIRST: Check if there's a standalone category that should become this child
-                # This handles cases like "Charity" (standalone) -> "Charity & Donations" -> "Charity" (child)
-                existing_child = None
-                standalone_to_merge = None
+                # FIRST: Check if there's already a child with this name under this parent
+                existing_child = Category.objects.filter(
+                    name__iexact=child_name,
+                    type=Category.CategoryType.EXPENSE,
+                    parent_id=parent_category.id
+                ).first()
                 
-                if should_move_here:
-                    # Look for standalone category first (parent=None)
-                    try:
-                        standalone_to_merge = Category.objects.get(
-                            name__iexact=child_name,
-                            type=Category.CategoryType.EXPENSE,
-                            parent__isnull=True
-                        )
-                    except Category.DoesNotExist:
-                        standalone_to_merge = None
-                    except Category.MultipleObjectsReturned:
-                        # Multiple standalone found, use the first one
-                        standalone_to_merge = Category.objects.filter(
-                            name__iexact=child_name,
-                            type=Category.CategoryType.EXPENSE,
-                            parent__isnull=True
-                        ).first()
-                    
-                    # Check if there's already a child with this name under the parent
-                    try:
-                        existing_child = Category.objects.get(
-                            name__iexact=child_name,
-                            type=Category.CategoryType.EXPENSE,
-                            parent=parent_category
-                        )
-                    except Category.DoesNotExist:
-                        existing_child = None
-                    except Category.MultipleObjectsReturned:
-                        existing_child = Category.objects.filter(
-                            name__iexact=child_name,
-                            type=Category.CategoryType.EXPENSE,
-                            parent=parent_category
-                        ).first()
-                    
-                    # If we found both standalone and existing child, merge them
-                    if standalone_to_merge and existing_child:
-                        # Merge: move expenses/incomes from standalone to existing child
+                # ALWAYS check for standalone category (not just when should_move_here)
+                # This helps catch cases where standalone should be used
+                standalone_category = Category.objects.filter(
+                    name__iexact=child_name,
+                    type=Category.CategoryType.EXPENSE,
+                    parent__isnull=True
+                ).first()
+                
+                # Handle standalone category merging/moving
+                if standalone_category:
+                    if existing_child and existing_child.id != standalone_category.id:
+                        # We have both an existing child and a standalone - merge standalone into child
                         from expenses.models import Expense, Income
-                        standalone_id = standalone_to_merge.id
-                        Expense.objects.filter(category=standalone_to_merge).update(category=existing_child)
-                        Income.objects.filter(category=standalone_to_merge).update(category=existing_child)
+                        standalone_id = standalone_category.id
+                        # Merge all expenses and income from standalone to existing child
+                        Expense.objects.filter(category=standalone_category).update(category=existing_child)
+                        Income.objects.filter(category=standalone_category).update(category=existing_child)
                         # Move children of standalone to existing child
-                        Category.objects.filter(parent=standalone_to_merge).update(parent=existing_child)
+                        Category.objects.filter(parent=standalone_category).update(parent=existing_child)
                         # Delete standalone
-                        standalone_to_merge.delete()
+                        standalone_category.delete()
+                        merged_count += 1
                         self.stdout.write(f'  ↻ Merged standalone "{child_name}" (id: {standalone_id}) into existing child (id: {existing_child.id}) under {parent_category.name}')
-                    elif standalone_to_merge:
-                        # Use standalone, will be moved to become child
-                        existing_child = standalone_to_merge
-                    # If only existing_child found, use it (already in place)
+                    elif not existing_child and should_move_here:
+                        # We have standalone but no existing child, and this is a move operation
+                        # Use standalone as the child - it will be moved to the correct parent below
+                        existing_child = standalone_category
                 
-                # If not found yet, try normal search
+                # If still not found, try normal search with mappings
                 if not existing_child:
                     existing_child = self.find_existing_category(
                         child_name,
@@ -564,21 +583,35 @@ class Command(BaseCommand):
                     
                     # Also try to find by name only (might be under different parent)
                     if not existing_child:
-                        # For non-move candidates, only search if there's exactly one match
-                        count = Category.objects.filter(name__iexact=child_name, type=Category.CategoryType.EXPENSE).count()
+                        # Search for any category with this name (but be careful)
+                        candidates = Category.objects.filter(
+                            name__iexact=child_name,
+                            type=Category.CategoryType.EXPENSE
+                        )
+                        count = candidates.count()
+                        
                         if count == 1:
-                            try:
-                                existing_child = Category.objects.get(name__iexact=child_name, type=Category.CategoryType.EXPENSE)
-                                # Don't use parent categories (parent=None) as children unless explicitly moved
-                                if existing_child.parent is None:
-                                    existing_child = None
-                                elif existing_child.parent == parent_category:
-                                    pass  # Use it, already in correct place
-                                else:
-                                    existing_child = None  # Don't use it, might be wrong category
-                            except Category.DoesNotExist:
+                            # Only one match, safe to use
+                            existing_child = candidates.first()
+                            # Don't use if it's a parent category (unless explicitly moving)
+                            if existing_child.parent is None and not should_move_here:
                                 existing_child = None
-                        # If count > 1, don't search by name only (too ambiguous)
+                        elif count > 1:
+                            # Multiple matches - prefer one that's already under this parent (by ID)
+                            existing_child = candidates.filter(parent_id=parent_category.id).first()
+                            if not existing_child and should_move_here:
+                                # Prefer standalone if should_move_here is True
+                                existing_child = candidates.filter(parent__isnull=True).first()
+                            if not existing_child:
+                                # For non-move cases, prefer one under a parent with the same name
+                                # This helps find "Groceries" that might be under "Food & Dining" already
+                                existing_child = candidates.filter(
+                                    parent__name__iexact=parent_name,
+                                    parent__type=Category.CategoryType.EXPENSE
+                                ).first()
+                            if not existing_child:
+                                # Use any that's not already under this parent
+                                existing_child = candidates.exclude(parent_id=parent_category.id).first()
                 
                 if existing_child:
                     # Update existing category
@@ -668,13 +701,21 @@ class Command(BaseCommand):
                     # Additional lightening for grandchild level (make them lighter than children)
                     grandchild_color = lighten_color(grandchild_color, factor=0.08)
                     
-                    # Try to find existing grandchild category
-                    existing_grandchild = self.find_existing_category(
-                        grandchild_name,
-                        Category.CategoryType.EXPENSE,
-                        parent=child_category,
-                        name_mappings=name_mappings
-                    )
+                    # Try to find existing grandchild category - first check under the child_category
+                    existing_grandchild = Category.objects.filter(
+                        name__iexact=grandchild_name,
+                        type=Category.CategoryType.EXPENSE,
+                        parent_id=child_category.id
+                    ).first()
+                    
+                    # If not found, try using find_existing_category method
+                    if not existing_grandchild:
+                        existing_grandchild = self.find_existing_category(
+                            grandchild_name,
+                            Category.CategoryType.EXPENSE,
+                            parent=child_category,
+                            name_mappings=name_mappings
+                        )
                     
                     # Also try to find by name only (might be under different parent)
                     if not existing_grandchild:
@@ -847,6 +888,7 @@ class Command(BaseCommand):
             f'\n=== Summary ===\n'
             f'Created: {created_count} categories\n'
             f'Updated: {updated_count} categories\n'
+            f'Merged: {merged_count} categories\n'
             f'Total processed: {created_count + updated_count} categories'
         ))
 
